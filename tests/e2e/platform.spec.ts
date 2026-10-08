@@ -8,7 +8,7 @@ test('каталог, поиск, адаптивность и локальные
   await expect(
     page.getByRole('link', { name: 'Открыть Test Agent Alpha', exact: true }),
   ).toBeVisible()
-  await page.getByRole('searchbox', { name: 'Поиск Copilot' }).fill('разработчика')
+  await page.getByRole('searchbox', { name: 'Поиск Copilot' }).fill('Figma')
   await expect(page.locator('.copilot-card')).toHaveCount(1)
   await page.getByRole('searchbox').fill('несуществующее приложение')
   await expect(page.getByRole('heading', { name: 'Ничего не найдено' })).toBeVisible()
@@ -24,7 +24,7 @@ test('каталог, поиск, адаптивность и локальные
 
 test('чат отправляет mock-ответ и сохраняет общую навигацию', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('link', { name: 'Открыть Помощник разработчика', exact: true }).click()
+  await page.getByRole('link', { name: 'Открыть Figma designe Copilot', exact: true }).click()
   await expect(page.getByText('Mock-режим', { exact: true })).toBeVisible()
   await page.getByRole('textbox', { name: 'Сообщение Copilot' }).fill('Как разбить задачу на шаги?')
   await page.getByRole('button', { name: 'Отправить сообщение' }).click()

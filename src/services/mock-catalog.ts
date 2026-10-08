@@ -16,8 +16,8 @@ export const mockCopilots: readonly Copilot[] = [
   },
   {
     id: 'development-copilot',
-    name: 'Помощник разработчика',
-    description: 'Обсудите код, подход к реализации и технические вопросы с AI-помощником.',
+    name: 'Figma designe Copilot',
+    description: 'Сервис для проверки соответствия файлов критериям дизайнеров.',
     interfaceType: 'chat',
     applicationUrl: null,
     status: 'available',
@@ -25,8 +25,8 @@ export const mockCopilots: readonly Copilot[] = [
   },
   {
     id: 'architecture-copilot',
-    name: 'Архитектурный помощник',
-    description: 'Разберите архитектурные решения, зависимости и структуру ваших приложений.',
+    name: 'AB-test Copilot',
+    description: 'Сервис для анализа результатов A/B-экспериментов.',
     interfaceType: 'chat',
     applicationUrl: null,
     status: 'available',
@@ -34,8 +34,8 @@ export const mockCopilots: readonly Copilot[] = [
   },
   {
     id: 'documentation-copilot',
-    name: 'Помощник по документации',
-    description: 'Сформулируйте требования, подготовьте структуру документа и упорядочьте знания.',
+    name: 'Sales Copilot',
+    description: 'Ваш помощник по продажам.',
     interfaceType: 'chat',
     applicationUrl: null,
     status: 'available',
@@ -43,9 +43,8 @@ export const mockCopilots: readonly Copilot[] = [
   },
   {
     id: 'analytics-copilot',
-    name: 'Аналитический помощник',
-    description:
-      'Исследуйте данные и сформулируйте вопросы для анализа. Copilot временно на обслуживании.',
+    name: 'Techmasters Copilot',
+    description: 'Сервис автоматизации назначения технических интервью в МТС.',
     interfaceType: 'chat',
     applicationUrl: null,
     status: 'maintenance',
@@ -53,8 +52,8 @@ export const mockCopilots: readonly Copilot[] = [
   },
   {
     id: 'research-copilot',
-    name: 'Помощник исследователя',
-    description: 'Исследуйте идеи и подходы к решению задач. Приложение готовится к запуску.',
+    name: 'Джарвис',
+    description: 'Ваш личный Джарвис. Железный костюм пока в разработке.',
     interfaceType: 'chat',
     applicationUrl: null,
     status: 'coming-soon',
