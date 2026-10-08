@@ -1,0 +1,39 @@
+services:
+  platform:
+    build:
+      context: .
+      target: runtime
+    ports:
+      - '127.0.0.1:${XOPS_PORT:-8080}:8080'
+    volumes:
+      - type: bind
+        source: ${MTS_FONTS_DIR:-./mts_shrift/ШРИФТ/Web}
+        target: /brand-fonts
+        read_only: true
+      - type: bind
+        source: ./config/runtime.json
+        target: /app/config/runtime.json
+        read_only: true
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+  checks:
+    profiles: [test]
+    build:
+      context: .
+      target: checks
+    init: true
+  e2e:
+    profiles: [test]
+    build:
+      context: .
+      target: browser-tests
+    environment:
+      PLAYWRIGHT_BASE_URL: http://platform:8080
+    depends_on:
+      platform:
+        condition: service_healthy
+    init: true

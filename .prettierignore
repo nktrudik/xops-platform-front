@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+package-lock.json
+.local-tools
+.artifacts
+.vscode
+mts_shrift
+*.pdf
+test-results
+playwright-report

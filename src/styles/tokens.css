@@ -1,0 +1,13 @@
+:root {
+  --red: #e30611;
+  --red-hover: #c7050f;
+  --red-soft: color-mix(in srgb, var(--red) 7%, white);
+  --text: #000;
+  --text-secondary: #58595b;
+  --muted: #8a8d8f;
+  --white: #fff;
+  --background: #f2f3f6;
+  --border: #e7e8eb;
+  --font-body: 'MTS Text', Arial, sans-serif;
+  --font-heading: 'MTS Extended', 'MTS Text', Arial, sans-serif;
+}

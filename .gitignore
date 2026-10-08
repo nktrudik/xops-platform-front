@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.local-tools/
+.artifacts/
+.vscode/
+.env
+.env.*
+!.env.example
+
+# Локальные корпоративные материалы не хранятся в Git.
+mts_shrift/
+MTS_Guide_02_removed.pdf
+**/*Guide*.pdf
+**/*.woff
+**/*.woff2
+**/*.ttf
+**/*.otf
+**/*.eot

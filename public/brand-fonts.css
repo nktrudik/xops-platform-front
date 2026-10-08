@@ -1,0 +1,30 @@
+@font-face {
+  font-family: 'MTS Text';
+  src: url('/brand-fonts/Text/MTSText-Regular/MTSText-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MTS Text';
+  src: url('/brand-fonts/Text/MTSText-Medium/MTSText-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MTS Text';
+  src: url('/brand-fonts/Text/MTSText-Bold/MTSText-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MTS Extended';
+  src: url('/brand-fonts/Extended/MTSExtended-Medium/MTSExtended-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MTS Extended';
+  src: url('/brand-fonts/Extended/MTSExtended-Bold/MTSExtended-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
