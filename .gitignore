@@ -3,6 +3,12 @@ dist/
 coverage/
 playwright-report/
 test-results/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+*.pyc
 .local-tools/
 .artifacts/
 .vscode/

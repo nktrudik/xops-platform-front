@@ -1,0 +1,5 @@
+display_name: Test Copilot
+description: Тестовый Copilot с собственным интерфейсом
+interface:
+  type: embedded
+  path: /

@@ -1,0 +1,40 @@
+[project]
+name = "xops-platform-backend"
+version = "0.1.0"
+description = "Локальный DEV backend каталога XOps Platform"
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "uvicorn>=0.34,<1.0",
+    "pydantic>=2.10,<3.0",
+    "pydantic-settings>=2.7,<3.0",
+    "httpx>=0.28,<1.0",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+ruff = ">=0.12,<1.0"
+mypy = ">=1.15,<2.0"
+bandit = ">=1.8,<2.0"
+pytest = ">=8.3,<10.0"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.bandit]
+exclude_dirs = ["tests"]

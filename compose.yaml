@@ -1,7 +1,25 @@
 services:
-  platform:
+  backend:
     build:
-      context: .
+      context: ./backend
+      target: runtime
+    environment:
+      XOPS_ENVIRONMENT: dev
+      XOPS_CATALOG_FILE: /app/data/copilots.json
+    volumes:
+      - ./backend/data:/app/data:ro
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  frontend:
+    build:
+      context: ./frontend
       target: runtime
     ports:
       - '127.0.0.1:${XOPS_PORT:-8080}:8080'
@@ -10,30 +28,35 @@ services:
         source: ${MTS_FONTS_DIR:-./mts_shrift/ШРИФТ/Web}
         target: /brand-fonts
         read_only: true
-      - type: bind
-        source: ./config/runtime.json
-        target: /app/config/runtime.json
-        read_only: true
+    depends_on:
+      backend:
+        condition: service_healthy
     init: true
-    read_only: true
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
-  checks:
+
+  frontend-checks:
     profiles: [test]
     build:
-      context: .
+      context: ./frontend
       target: checks
     init: true
+
+  backend-checks:
+    profiles: [test]
+    build:
+      context: ./backend
+      target: checks
+    init: true
+
   e2e:
     profiles: [test]
     build:
-      context: .
+      context: ./frontend
       target: browser-tests
     environment:
-      PLAYWRIGHT_BASE_URL: http://platform:8080
+      PLAYWRIGHT_BASE_URL: http://frontend:8080
     depends_on:
-      platform:
+      frontend:
         condition: service_healthy
     init: true

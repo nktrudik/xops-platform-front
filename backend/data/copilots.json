@@ -1,0 +1,63 @@
+[
+  {
+    "copilot_name": "test-agent-alpha",
+    "status": "available",
+    "base_url": "http://2.59.80.61/dev/test-agent-alpha",
+    "icon": "sparkles",
+    "metadata": {
+      "display_name": "Test Agent Alpha",
+      "description": "Тестовый AI Copilot с собственным интерфейсом. Работайте с приложением прямо на платформе.",
+      "interface": { "type": "embedded", "path": "/" }
+    }
+  },
+  {
+    "copilot_name": "development-copilot",
+    "status": "available",
+    "icon": "code",
+    "metadata": {
+      "display_name": "Figma Design Copilot",
+      "description": "Сервис для проверки соответствия файлов критериям дизайнеров.",
+      "interface": { "type": "external", "url": "https://example.com" }
+    }
+  },
+  {
+    "copilot_name": "architecture-copilot",
+    "status": "available",
+    "icon": "layers",
+    "metadata": {
+      "display_name": "AB-test Copilot",
+      "description": "Сервис для анализа результатов A/B-экспериментов.",
+      "interface": { "type": "chat" }
+    }
+  },
+  {
+    "copilot_name": "documentation-copilot",
+    "status": "available",
+    "icon": "document",
+    "metadata": {
+      "display_name": "Sales Copilot",
+      "description": "Ваш помощник по продажам.",
+      "interface": { "type": "chat" }
+    }
+  },
+  {
+    "copilot_name": "analytics-copilot",
+    "status": "maintenance",
+    "icon": "chart",
+    "metadata": {
+      "display_name": "Techmasters Copilot",
+      "description": "Сервис автоматизации назначения технических интервью в МТС.",
+      "interface": { "type": "chat" }
+    }
+  },
+  {
+    "copilot_name": "research-copilot",
+    "status": "coming-soon",
+    "icon": "compass",
+    "metadata": {
+      "display_name": "Джарвис",
+      "description": "Ваш личный Джарвис. Железный костюм пока в разработке.",
+      "interface": { "type": "chat" }
+    }
+  }
+]
