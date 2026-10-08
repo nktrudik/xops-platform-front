@@ -149,6 +149,18 @@ describe('Встроенное приложение', () => {
     expect(wrapper.text()).toContain('Приложение не отображается')
   })
 
+  it('кнопка повторной загрузки меняет URL документа iframe', async () => {
+    const wrapper = embedMount(async () => ({ state: 'ready' }))
+    await flushPromises()
+    const firstUrl = wrapper.get('iframe').attributes('src')
+    await wrapper.get('iframe').trigger('load')
+    await wrapper.get('.panel-toolbar button').trigger('click')
+    await flushPromises()
+    const secondUrl = wrapper.get('iframe').attributes('src')
+    expect(secondUrl).not.toBe(firstUrl)
+    expect(new URL(secondUrl!).pathname).toBe('/app')
+  })
+
   it('обрабатывает ошибку проверки и отсутствие конфигурации', async () => {
     const wrapper = embedMount(async () => {
       throw new Error('Сеть')

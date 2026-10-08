@@ -38,7 +38,7 @@ test('удалённый UI отображается внутри платфор
   await page.route('**/internal/embedding-check?*', (route) =>
     route.fulfill({ json: { state: 'ready' } }),
   )
-  await page.route('http://2.59.80.61/dev/test-agent-alpha', (route) =>
+  await page.route('http://2.59.80.61/dev/test-agent-alpha?*', (route) =>
     route.fulfill({
       contentType: 'text/html; charset=utf-8',
       body: '<html lang="ru"><body><h1>Тестовый интерфейс Copilot</h1></body></html>',
@@ -50,6 +50,40 @@ test('удалённый UI отображается внутри платфор
   ).toBeVisible()
   await expect(page.getByRole('link', { name: 'XOps Platform — главная' })).toBeVisible()
   await expect(page.locator('.frame-loading')).toHaveCount(0)
+})
+
+test('повтор и обновление страницы загружают новую версию UI вместо сохранённого документа', async ({
+  page,
+}) => {
+  const documents = new Map<string, string>()
+  const requests: string[] = []
+  let currentVersion = 'Версия 1'
+  await page.route('**/internal/embedding-check?*', (route) =>
+    route.fulfill({ json: { state: 'ready' } }),
+  )
+  await page.route('http://2.59.80.61/dev/test-agent-alpha**', (route) => {
+    const url = route.request().url()
+    requests.push(url)
+    const version = documents.get(url) ?? currentVersion
+    documents.set(url, version)
+    return route.fulfill({
+      contentType: 'text/html; charset=utf-8',
+      headers: { 'Cache-Control': 'public, max-age=86400' },
+      body: `<html lang="ru"><body><h1>${version}</h1></body></html>`,
+    })
+  })
+  await page.goto('/copilots/test-agent-alpha')
+  await expect(page.frameLocator('iframe').getByRole('heading', { name: 'Версия 1' })).toBeVisible()
+  currentVersion = 'Версия 2'
+  await page.getByRole('button', { name: 'Повторить', exact: true }).click()
+  await expect(page.frameLocator('iframe').getByRole('heading', { name: 'Версия 2' })).toBeVisible()
+  currentVersion = 'Версия 3'
+  await page.reload()
+  await expect(page.frameLocator('iframe').getByRole('heading', { name: 'Версия 3' })).toBeVisible()
+  expect(new Set(requests).size).toBe(3)
+  for (const request of requests) {
+    expect(new URL(request).searchParams.get('_xops_reload')).toBeTruthy()
+  }
 })
 
 test('запрет iframe, недоступный Copilot и неизвестный маршрут', async ({ page }) => {

@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import type { Copilot } from '../domain/copilot'
 import { usePlatform } from '../app/context'
+import { freshApplicationUrl } from '../services/embedding'
 import AppIcon from './AppIcon.vue'
 import StatePanel from './StatePanel.vue'
 
@@ -10,6 +11,7 @@ const { embedding } = usePlatform()
 const state = ref<'checking' | 'loading' | 'ready' | 'error'>('checking')
 const reason = ref('')
 const generation = ref(0)
+const iframeUrl = ref<string>()
 let controller: AbortController | undefined
 let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -41,6 +43,7 @@ async function open(): Promise<void> {
     const result = await embedding(props.copilot.applicationKey, current.signal)
     if (current.signal.aborted) return
     if (result.state !== 'ready') return fail(result.reason)
+    iframeUrl.value = freshApplicationUrl(props.copilot.applicationUrl)
     state.value = 'loading'
     timer = setTimeout(
       () =>
@@ -87,7 +90,7 @@ onBeforeUnmount(() => {
       </div>
       <iframe
         :key="generation"
-        :src="copilot.applicationUrl ?? undefined"
+        :src="iframeUrl"
         :title="copilot.name"
         sandbox="allow-scripts allow-same-origin allow-forms allow-downloads"
         referrerpolicy="no-referrer"

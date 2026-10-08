@@ -1,6 +1,13 @@
 export type EmbeddingResult =
   { state: 'ready' } | { state: 'blocked' | 'unavailable'; reason: string }
 
+/** Новый адрес документа не переиспользует HTTP-кеш предыдущей загрузки iframe. */
+export function freshApplicationUrl(applicationUrl: string): string {
+  const url = new URL(applicationUrl)
+  url.searchParams.set('_xops_reload', crypto.getRandomValues(new Uint32Array(4)).join('-'))
+  return url.href
+}
+
 /** Локальная проверка встраивания, не API Copilot и не источник runtime-статусов. */
 export async function checkEmbedding(
   applicationKey: string,

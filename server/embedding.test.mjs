@@ -84,6 +84,14 @@ test('учитывается политика после перенаправл�
   assert.equal(calls, 2)
 })
 
+test('проверка iframe запрашивает актуальные заголовки без использования кеша', async () => {
+  const result = await probeEmbedding(target, parent, async (_url, options) => {
+    assert.equal(options.cache, 'no-store')
+    return new Response('')
+  })
+  assert.equal(result.state, 'ready')
+})
+
 test('HTTPS-платформа не встраивает HTTP, опасные протоколы отклоняются', async () => {
   assert.equal(
     (await probeEmbedding('http://example.test', 'https://portal.test')).state,

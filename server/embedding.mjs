@@ -102,7 +102,7 @@ export async function probeEmbedding(targetUrl, parentOrigin, fetcher = fetch, t
           reason: 'Браузер запрещает встраивание HTTP-приложения в HTTPS-страницу.',
         }
       }
-      const response = await fetcher(currentUrl, { signal, redirect: 'manual' })
+      const response = await fetcher(currentUrl, { signal, redirect: 'manual', cache: 'no-store' })
       await response.body?.cancel()
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers.get('location')
