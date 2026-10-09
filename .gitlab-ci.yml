@@ -9,6 +9,9 @@ variables:
   COPILOT_NAME: "platform-xops"   # путь /<env>/platform-xops, неймспейсы platform-xops-dev/prod
   BACKEND_PORT: "8000"
   FRONTEND_PORT: "8080"
+  # Хост (IP/домен), по которому БРАУЗЕР достаёт копилоты для iframe. Пока DNS нет — IP ноды (Traefik на любой ноде).
+  # Используется в k3s/configmap-copilots.yaml как http://${COPILOT_HOST}/${ENV_PREFIX}/<copilot>.
+  COPILOT_HOST: "2.59.80.61"
   # Промоушен образа dev→prod. "true" — на master берём протестированный бэкенд dev-<SHA> и перетегируем в prod
   # БЕЗ пересборки (требует fast-forward мержа dev→master). Фронт всегда пересобирается под prod-base.
   # "false" — прод пересобирает оба образа из исходников.
@@ -127,7 +130,7 @@ deploy:
         ROBOT_USER="${HARBOR_DEV_ROBOT_USER}"; ROBOT_TOKEN="${HARBOR_DEV_ROBOT_TOKEN}"
       fi
     - mkdir -p /root/.kube && cp /etc/gitlab-runner/k3.crt /root/.kube/k3.crt
-    - export COPILOT_NAME ENV_PREFIX KUBE_NAMESPACE BACKEND_IMAGE FRONTEND_IMAGE BACKEND_PORT FRONTEND_PORT FRONTEND_REPLICAS
+    - export COPILOT_NAME ENV_PREFIX KUBE_NAMESPACE BACKEND_IMAGE FRONTEND_IMAGE BACKEND_PORT FRONTEND_PORT FRONTEND_REPLICAS COPILOT_HOST
     - kubectl create namespace ${KUBE_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
     - kubectl create secret docker-registry harbor-secret --docker-server="${HARBOR_BASE}" --docker-username="${ROBOT_USER}" --docker-password="${ROBOT_TOKEN}" -n "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
     - |

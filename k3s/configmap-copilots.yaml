@@ -12,7 +12,7 @@ data:
       {
         "copilot_name": "test-agent-alpha",
         "status": "available",
-        "base_url": "http://10.220.0.10/prod/test-agent-alpha",
+        "base_url": "http://${COPILOT_HOST}/${ENV_PREFIX}/test-agent-alpha",
         "icon": "sparkles",
         "metadata": {
           "display_name": "Test Agent Alpha",
@@ -21,3 +21,16 @@ data:
         }
       }
     ]
+
+# Новый коиплот
+#{
+#  "copilot_name": "sales-copilot",          // системное имя = его COPILOT_NAME (путь /<env>/sales-copilot)
+#  "status": "available",                     // available | maintenance | coming-soon
+#  "base_url": "http://${COPILOT_HOST}/${ENV_PREFIX}/sales-copilot",   // ТОЛЬКО для embedded
+#  "icon": "chart",                           // sparkles|code|layers|document|chart|compass
+#  "metadata": {
+#    "display_name": "Sales Copilot",
+#    "description": "Помощник по продажам.",
+#    "interface": { "type": "embedded", "path": "/" }
+#  }
+#}
