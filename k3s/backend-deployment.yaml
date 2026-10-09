@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: ${KUBE_NAMESPACE}
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      nodeSelector:
+        environment: ${ENV_PREFIX}
+      imagePullSecrets:
+        - name: harbor-secret
+      containers:
+        - name: backend
+          image: ${BACKEND_IMAGE}
+          ports:
+            - containerPort: ${BACKEND_PORT}
+          env:
+            - name: XOPS_CATALOG_FILE
+              value: /app/data/copilots.json
+          volumeMounts:
+            - name: copilots
+              mountPath: /app/data/copilots.json
+              subPath: copilots.json
+              readOnly: true
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: ${BACKEND_PORT}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: ${BACKEND_PORT}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: copilots
+          configMap:
+            name: ${COPILOT_NAME}-copilots

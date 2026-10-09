@@ -1,0 +1,169 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Отдельный CI платформы xops-platform-xops (gateway-топология: backend + frontend-nginx).
+# НЕ подключает общий copilot-pipeline.yml. Переиспользует групповые переменные:
+#   HARBOR_BASE, HARBOR_PROJECT, HARBOR_CA_CERT, HARBOR_DEV/PROD_ROBOT_USER/TOKEN,
+#   NODE_TOLERATION_KEY (role), и kubeconfig гитлаб-раннера.
+# Схема: path /dev/platform-xops/ и /prod/platform-xops/ (DNS не нужен). Наружу только фронт; nginx проксирует /api→backend.
+# ─────────────────────────────────────────────────────────────────────────────
+variables:
+  COPILOT_NAME: "platform-xops"   # путь /<env>/platform-xops, неймспейсы platform-xops-dev/prod
+  BACKEND_PORT: "8000"
+  FRONTEND_PORT: "8080"
+
+stages:
+  - build
+  - push
+  - deploy
+  - cleanup
+
+# ── Build: два образа (backend из backend/, frontend из frontend/) ────────────
+build:
+  stage: build
+  image: docker:27-cli
+  tags: [deploy-runner]
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "master" ]; then
+        ENV_PREFIX="prod"; FRONTEND_REPLICAS="2"
+        ROBOT_USER="${HARBOR_PROD_ROBOT_USER}"; ROBOT_TOKEN="${HARBOR_PROD_ROBOT_TOKEN}"
+      else
+        ENV_PREFIX="dev"; FRONTEND_REPLICAS="1"
+        ROBOT_USER="${HARBOR_DEV_ROBOT_USER}"; ROBOT_TOKEN="${HARBOR_DEV_ROBOT_TOKEN}"
+      fi
+      KUBE_NAMESPACE="${COPILOT_NAME}-${ENV_PREFIX}"
+      BASE="${HARBOR_BASE}/${HARBOR_PROJECT}/${COPILOT_NAME}"
+      BACKEND_IMAGE="${BASE}-backend:${ENV_PREFIX}-${CI_COMMIT_SHORT_SHA}"
+      BACKEND_LATEST="${BASE}-backend:${ENV_PREFIX}-latest"
+      FRONTEND_IMAGE="${BASE}-frontend:${ENV_PREFIX}-${CI_COMMIT_SHORT_SHA}"
+      FRONTEND_LATEST="${BASE}-frontend:${ENV_PREFIX}-latest"
+    - mkdir -p /etc/docker/certs.d/${HARBOR_BASE}
+    - echo "${HARBOR_CA_CERT}" > /etc/docker/certs.d/${HARBOR_BASE}/ca.crt
+    - echo "${ROBOT_TOKEN}" | docker login ${HARBOR_BASE} -u "${ROBOT_USER}" --password-stdin
+    - docker pull "${BACKEND_LATEST}" || true
+    - docker pull "${FRONTEND_LATEST}" || true
+    - echo "🔨 Building backend ${BACKEND_IMAGE}..."
+    - docker build --cache-from "${BACKEND_LATEST}" -t "${BACKEND_IMAGE}" -t "${BACKEND_LATEST}" ./backend
+    - echo "🔨 Building frontend ${FRONTEND_IMAGE} (base=/${ENV_PREFIX}/${COPILOT_NAME}/)..."
+    - |
+      docker build \
+        --build-arg VITE_BASE_PATH=/${ENV_PREFIX}/${COPILOT_NAME}/ \
+        --cache-from "${FRONTEND_LATEST}" -t "${FRONTEND_IMAGE}" -t "${FRONTEND_LATEST}" ./frontend
+    - |
+      {
+        echo "ENV_PREFIX=${ENV_PREFIX}"
+        echo "KUBE_NAMESPACE=${KUBE_NAMESPACE}"
+        echo "BACKEND_IMAGE=${BACKEND_IMAGE}"
+        echo "BACKEND_LATEST=${BACKEND_LATEST}"
+        echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}"
+        echo "FRONTEND_LATEST=${FRONTEND_LATEST}"
+        echo "FRONTEND_REPLICAS=${FRONTEND_REPLICAS}"
+      } >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev"'
+
+# ── Push ─────────────────────────────────────────────────────────────────────
+push:
+  stage: push
+  image: docker:27-cli
+  tags: [deploy-runner]
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_TLS_CERTDIR: ""
+  needs: [build]
+  script:
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "master" ]; then
+        ROBOT_USER="${HARBOR_PROD_ROBOT_USER}"; ROBOT_TOKEN="${HARBOR_PROD_ROBOT_TOKEN}"
+      else
+        ROBOT_USER="${HARBOR_DEV_ROBOT_USER}"; ROBOT_TOKEN="${HARBOR_DEV_ROBOT_TOKEN}"
+      fi
+    - mkdir -p /etc/docker/certs.d/${HARBOR_BASE}
+    - echo "${HARBOR_CA_CERT}" > /etc/docker/certs.d/${HARBOR_BASE}/ca.crt
+    - echo "${ROBOT_TOKEN}" | docker login ${HARBOR_BASE} -u "${ROBOT_USER}" --password-stdin
+    - docker push "${BACKEND_IMAGE}"
+    - docker push "${BACKEND_LATEST}"
+    - docker push "${FRONTEND_IMAGE}"
+    - docker push "${FRONTEND_LATEST}"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev"'
+
+# ── Deploy ───────────────────────────────────────────────────────────────────
+deploy:
+  stage: deploy
+  image: alpine:latest
+  tags: [deploy-runner]
+  needs:
+    - job: build
+      artifacts: true
+    - job: push
+  variables:
+    KUBECONFIG: "/etc/gitlab-runner/kubeconfig"
+  script:
+    - apk add --no-cache kubectl gettext
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "master" ]; then
+        ROBOT_USER="${HARBOR_PROD_ROBOT_USER}"; ROBOT_TOKEN="${HARBOR_PROD_ROBOT_TOKEN}"
+      else
+        ROBOT_USER="${HARBOR_DEV_ROBOT_USER}"; ROBOT_TOKEN="${HARBOR_DEV_ROBOT_TOKEN}"
+      fi
+    - mkdir -p /root/.kube && cp /etc/gitlab-runner/k3.crt /root/.kube/k3.crt
+    - export COPILOT_NAME ENV_PREFIX KUBE_NAMESPACE BACKEND_IMAGE FRONTEND_IMAGE BACKEND_PORT FRONTEND_PORT FRONTEND_REPLICAS
+    - kubectl create namespace ${KUBE_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl create secret docker-registry harbor-secret --docker-server="${HARBOR_BASE}" --docker-username="${ROBOT_USER}" --docker-password="${ROBOT_TOKEN}" -n "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+    - |
+      # Применяем манифесты в правильном порядке (configmap/quota/netpol/services ДО deployments; ingress последним).
+      for f in configmap-copilots resourcequota limitrange networkpolicy backend-service frontend-service backend-deployment frontend-deployment middleware ingress; do
+        if [ -f "k3s/$f.yaml" ]; then
+          echo "Applying k3s/$f.yaml..."
+          envsubst < "k3s/$f.yaml" | kubectl apply -f - -n ${KUBE_NAMESPACE}
+        fi
+      done
+    - |
+      # Прибиваем оба деплоймента к ноде (nodeSelector уже в манифестах) + toleration по NODE_TOLERATION_KEY.
+      if [ -n "${NODE_TOLERATION_KEY}" ]; then
+        TOL_EFFECT="${NODE_TOLERATION_EFFECT:-NoSchedule}"
+        PATCH="{\"spec\":{\"template\":{\"spec\":{\"tolerations\":[{\"key\":\"${NODE_TOLERATION_KEY}\",\"operator\":\"Exists\",\"effect\":\"${TOL_EFFECT}\"}]}}}}"
+        for d in backend frontend; do
+          kubectl patch deployment "$d" -n ${KUBE_NAMESPACE} --type merge -p "$PATCH"
+        done
+      fi
+    - echo "⏳ Waiting for rollout..."
+    - kubectl rollout status deployment/backend -n ${KUBE_NAMESPACE} --timeout=180s
+    - kubectl rollout status deployment/frontend -n ${KUBE_NAMESPACE} --timeout=180s
+    - echo "✅ Платформа доступна на http://<нода>/${ENV_PREFIX}/${COPILOT_NAME}/"
+  environment:
+    name: ${COPILOT_NAME}-${CI_COMMIT_BRANCH}
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
+      allow_failure: false
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      when: on_success
+
+# ── Cleanup ──────────────────────────────────────────────────────────────────
+cleanup:
+  stage: cleanup
+  image: docker:27-cli
+  tags: [deploy-runner]
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_TLS_CERTDIR: ""
+  needs: [deploy]
+  script:
+    - docker image prune -f
+    - |
+      for repo in "${HARBOR_BASE}/${HARBOR_PROJECT}/${COPILOT_NAME}-backend" "${HARBOR_BASE}/${HARBOR_PROJECT}/${COPILOT_NAME}-frontend"; do
+        docker images "$repo" --format "{{.Repository}}:{{.Tag}}" | grep -v "latest" | xargs -r docker rmi || true
+      done
+    - docker image prune -a -f --filter "until=24h"
+    - docker builder prune -f --filter "until=168h"
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "dev"'
+      when: on_success

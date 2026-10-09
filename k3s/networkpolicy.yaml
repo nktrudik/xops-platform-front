@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: platform-netpol
+  namespace: ${KUBE_NAMESPACE}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Traefik (kube-system) → фронт на 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: TCP
+          port: ${FRONTEND_PORT}
+    # Внутри неймспейса: nginx (frontend) → backend на 8000
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: ${BACKEND_PORT}
+  egress:
+    # Открыто: бэкенд ходит к копилотам (httpx) + DNS
+    - {}

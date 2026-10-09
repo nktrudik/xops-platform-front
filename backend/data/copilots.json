@@ -2,7 +2,7 @@
   {
     "copilot_name": "test-agent-alpha",
     "status": "available",
-    "base_url": "http://2.59.80.61/dev/test-agent-alpha",
+    "base_url": "http://10.220.0.10/prod/test-agent-alpha",
     "icon": "sparkles",
     "metadata": {
       "display_name": "Test Agent Alpha",

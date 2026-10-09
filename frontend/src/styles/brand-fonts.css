@@ -1,0 +1,32 @@
+/* Импортируется из main.ts → Vite ребейзит url() с base (под path-схемой → /dev/platform-xops/brand-fonts/...).
+   Пути ПЛОСКИЕ — под ConfigMap-volume шрифтов (nginx отдаёт /brand-fonts/<файл>.woff2). */
+@font-face {
+  font-family: 'MTS Text';
+  src: url('/brand-fonts/MTSText-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MTS Text';
+  src: url('/brand-fonts/MTSText-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MTS Text';
+  src: url('/brand-fonts/MTSText-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MTS Extended';
+  src: url('/brand-fonts/MTSExtended-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MTS Extended';
+  src: url('/brand-fonts/MTSExtended-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}

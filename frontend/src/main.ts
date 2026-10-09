@@ -4,6 +4,7 @@ import { router } from './app/router'
 import { createPlatformServices, platformKey } from './app/context'
 import { createCatalogRepository } from './services/catalog'
 import { createMockChatGateway } from './services/mock-chat'
+import './styles/brand-fonts.css'
 import './styles/tokens.css'
 import './styles/base.css'
 

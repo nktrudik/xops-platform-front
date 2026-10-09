@@ -1,0 +1,14 @@
+# Имя сервиса ровно `backend` — nginx во фронте проксирует /api → http://backend:8000 (как в compose).
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: ${KUBE_NAMESPACE}
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: ${BACKEND_PORT}
+      targetPort: ${BACKEND_PORT}
+  type: ClusterIP

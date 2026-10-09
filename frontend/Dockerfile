@@ -8,6 +8,9 @@ COPY . .
 CMD ["npm", "run", "check"]
 
 FROM checks AS build
+# base-path для SPA (CI передаёт /<env>/platform-xops/; локально '/')
+ARG VITE_BASE_PATH=/
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
 RUN npm run build
 
 FROM checks AS browser-tests
