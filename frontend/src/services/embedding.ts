@@ -13,7 +13,7 @@ export async function checkEmbedding(
   copilotId: string,
   signal: AbortSignal,
 ): Promise<EmbeddingResult> {
-  const response = await fetch(`/api/copilots/${encodeURIComponent(copilotId)}/embedding-check`, {
+  const response = await fetch(`${import.meta.env.BASE_URL}api/copilots/${encodeURIComponent(copilotId)}/embedding-check`, {
     signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]),
     cache: 'no-store',
   })
