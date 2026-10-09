@@ -9,6 +9,10 @@ variables:
   COPILOT_NAME: "platform-xops"   # путь /<env>/platform-xops, неймспейсы platform-xops-dev/prod
   BACKEND_PORT: "8000"
   FRONTEND_PORT: "8080"
+  # Промоушен образа dev→prod. "true" — на master берём протестированный бэкенд dev-<SHA> и перетегируем в prod
+  # БЕЗ пересборки (требует fast-forward мержа dev→master). Фронт всегда пересобирается под prod-base.
+  # "false" — прод пересобирает оба образа из исходников.
+  PROMOTE_TO_PROD: "true"
 
 stages:
   - build
@@ -44,8 +48,18 @@ build:
     - echo "${ROBOT_TOKEN}" | docker login ${HARBOR_BASE} -u "${ROBOT_USER}" --password-stdin
     - docker pull "${BACKEND_LATEST}" || true
     - docker pull "${FRONTEND_LATEST}" || true
-    - echo "🔨 Building backend ${BACKEND_IMAGE}..."
-    - docker build --cache-from "${BACKEND_LATEST}" -t "${BACKEND_IMAGE}" -t "${BACKEND_LATEST}" ./backend
+    - |
+      if [ "$ENV_PREFIX" = "prod" ] && [ "${PROMOTE_TO_PROD}" = "true" ]; then
+        # Промоушен: берём протестированный dev-образ бэкенда (FF-мерж → SHA master == SHA dev) и перетегируем, без пересборки.
+        DEV_BACKEND="${HARBOR_BASE}/${HARBOR_PROJECT}/${COPILOT_NAME}-backend:dev-${CI_COMMIT_SHORT_SHA}"
+        echo "📤 Промоушен бэкенда: $DEV_BACKEND → $BACKEND_IMAGE (без пересборки)"
+        docker pull "$DEV_BACKEND" || { echo "❌ $DEV_BACKEND не найден. Нужен fast-forward мерж dev→master и прошедший dev-пайплайн."; exit 1; }
+        docker tag "$DEV_BACKEND" "$BACKEND_IMAGE"
+        docker tag "$DEV_BACKEND" "$BACKEND_LATEST"
+      else
+        echo "🔨 Building backend ${BACKEND_IMAGE}..."
+        docker build --cache-from "${BACKEND_LATEST}" -t "${BACKEND_IMAGE}" -t "${BACKEND_LATEST}" ./backend
+      fi
     - echo "🔨 Building frontend ${FRONTEND_IMAGE} (base=/${ENV_PREFIX}/${COPILOT_NAME}/)..."
     - |
       docker build \
