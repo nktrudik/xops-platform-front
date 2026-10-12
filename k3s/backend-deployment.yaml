@@ -15,6 +15,7 @@ spec:
       labels:
         app: backend
     spec:
+      serviceAccountName: ${COPILOT_NAME}-backend   # read-only доступ к API кубера (discovery)
       nodeSelector:
         environment: ${ENV_PREFIX}
       imagePullSecrets:
@@ -27,6 +28,14 @@ spec:
           env:
             - name: XOPS_CATALOG_FILE
               value: /app/data/copilots.json
+            - name: XOPS_DISCOVERY            # kubernetes — реальный discovery через API; mock — из copilots.json
+              value: "kubernetes"
+            - name: XOPS_ENVIRONMENT          # dev|prod — фильтр неймспейсов и base_url
+              value: ${ENV_PREFIX}
+            - name: XOPS_COPILOT_HOST         # хост для base_url копилотов (iframe + embedding-check)
+              value: ${COPILOT_HOST}
+            - name: XOPS_PLATFORM_NAMESPACE   # исключить собственный неймспейс из каталога
+              value: ${KUBE_NAMESPACE}
           volumeMounts:
             - name: copilots
               mountPath: /app/data/copilots.json

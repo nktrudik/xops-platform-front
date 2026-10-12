@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     """Пути и параметры интеграций, задаваемые переменными окружения."""
 
     model_config = SettingsConfigDict(env_prefix="XOPS_")
-    environment: Literal["dev"] = "dev"
+    environment: Literal["dev", "prod"] = "dev"
+    discovery: Literal["mock", "kubernetes"] = "mock"  # источник каталога
+    copilot_host: str = ""  # хост для base_url копилотов (iframe + embedding-check), напр. IP ноды
+    platform_namespace: str = ""  # собственный неймспейс — исключается из discovery
     catalog_file: Path = Path("data/copilots.json")
     integration_timeout: float = Field(default=8.0, gt=0, le=30)

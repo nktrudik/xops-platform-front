@@ -25,3 +25,4 @@ MTS_Guide_02_removed.pdf
 **/*.ttf
 **/*.otf
 **/*.eot
+.DS_STORE

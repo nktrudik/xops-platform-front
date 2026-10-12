@@ -1,20 +1,11 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Отдельный CI платформы xops-platform-xops (gateway-топология: backend + frontend-nginx).
-# НЕ подключает общий copilot-pipeline.yml. Переиспользует групповые переменные:
-#   HARBOR_BASE, HARBOR_PROJECT, HARBOR_CA_CERT, HARBOR_DEV/PROD_ROBOT_USER/TOKEN,
-#   NODE_TOLERATION_KEY (role), и kubeconfig гитлаб-раннера.
 # Схема: path /dev/platform-xops/ и /prod/platform-xops/ (DNS не нужен). Наружу только фронт; nginx проксирует /api→backend.
 # ─────────────────────────────────────────────────────────────────────────────
 variables:
   COPILOT_NAME: "platform-xops"   # путь /<env>/platform-xops, неймспейсы platform-xops-dev/prod
   BACKEND_PORT: "8000"
   FRONTEND_PORT: "8080"
-  # Хост (IP/домен), по которому БРАУЗЕР достаёт копилоты для iframe. Пока DNS нет — IP ноды (Traefik на любой ноде).
-  # Используется в k3s/configmap-copilots.yaml как http://${COPILOT_HOST}/${ENV_PREFIX}/<copilot>.
+  
   COPILOT_HOST: "2.59.80.61"
-  # Промоушен образа dev→prod. "true" — на master берём протестированный бэкенд dev-<SHA> и перетегируем в prod
-  # БЕЗ пересборки (требует fast-forward мержа dev→master). Фронт всегда пересобирается под prod-base.
-  # "false" — прод пересобирает оба образа из исходников.
   PROMOTE_TO_PROD: "true"
 
 stages:
@@ -135,7 +126,7 @@ deploy:
     - kubectl create secret docker-registry harbor-secret --docker-server="${HARBOR_BASE}" --docker-username="${ROBOT_USER}" --docker-password="${ROBOT_TOKEN}" -n "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
     - |
       # Применяем манифесты в правильном порядке (configmap/quota/netpol/services ДО deployments; ingress последним).
-      for f in configmap-copilots resourcequota limitrange networkpolicy backend-service frontend-service backend-deployment frontend-deployment middleware ingress; do
+      for f in rbac configmap-copilots resourcequota limitrange networkpolicy backend-service frontend-service backend-deployment frontend-deployment middleware ingress; do
         if [ -f "k3s/$f.yaml" ]; then
           echo "Applying k3s/$f.yaml..."
           envsubst < "k3s/$f.yaml" | kubectl apply -f - -n ${KUBE_NAMESPACE}

@@ -1,0 +1,35 @@
+# Read-only доступ бэкенда платформы к API кубера для discovery копилотов.
+# ServiceAccount монтирует токен автоматически → бэкенд использует config.load_incluster_config() (kubeconfig НЕ нужен).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ${COPILOT_NAME}-backend
+  namespace: ${KUBE_NAMESPACE}
+---
+# ClusterRole — ТОЛЬКО чтение (get/list/watch), без create/update/delete/patch.
+# configmaps — ищем copilot-meta по всему кластеру; deployments — статус копилота.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ${COPILOT_NAME}-reader
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  # по binding на окружение, т.к. SA в разных неймспейсах (dev/prod), а ClusterRole общий
+  name: ${COPILOT_NAME}-reader-${ENV_PREFIX}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ${COPILOT_NAME}-reader
+subjects:
+  - kind: ServiceAccount
+    name: ${COPILOT_NAME}-backend
+    namespace: ${KUBE_NAMESPACE}

@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.10,<3.0",
     "pydantic-settings>=2.7,<3.0",
     "httpx>=0.28,<1.0",
+    "kubernetes>=31,<32",
 ]
 
 [tool.poetry]
@@ -32,6 +33,11 @@ python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["app", "tests"]
+
+# kubernetes-клиент не поставляет полных stub'ов — не роняем strict на нём
+[[tool.mypy.overrides]]
+module = "kubernetes.*"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

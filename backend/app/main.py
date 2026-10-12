@@ -10,8 +10,18 @@ from fastapi.responses import JSONResponse
 
 from app.discovery import CopilotSource, DiscoveryError, MockCopilotSource, get_catalog
 from app.embedding import check_embedding, origin
+from app.kubernetes import KubernetesCopilotSource
 from app.models import Copilot, EmbeddedInterface, EmbeddingResult
 from app.settings import Settings
+
+
+def _build_source(config: Settings) -> CopilotSource:
+    """Источник каталога по настройке: kubernetes (discovery) или mock (файл)."""
+    if config.discovery == "kubernetes":
+        return KubernetesCopilotSource(
+            config.environment, config.copilot_host, config.platform_namespace
+        )
+    return MockCopilotSource(config.catalog_file)
 
 
 def create_app(
@@ -21,7 +31,7 @@ def create_app(
 ) -> FastAPI:
     """Создаёт приложение с явно заменяемым discovery и HTTP-транспортом."""
     config = settings or Settings()
-    discovery = source or MockCopilotSource(config.catalog_file)
+    discovery = source or _build_source(config)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
