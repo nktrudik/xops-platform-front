@@ -126,7 +126,7 @@ deploy:
     - kubectl create secret docker-registry harbor-secret --docker-server="${HARBOR_BASE}" --docker-username="${ROBOT_USER}" --docker-password="${ROBOT_TOKEN}" -n "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
     - |
       # Применяем манифесты в правильном порядке (configmap/quota/netpol/services ДО deployments; ingress последним).
-      for f in rbac configmap-copilots resourcequota limitrange networkpolicy backend-service frontend-service backend-deployment frontend-deployment middleware ingress; do
+      for f in rbac resourcequota limitrange networkpolicy backend-service frontend-service backend-deployment frontend-deployment middleware ingress; do
         if [ -f "k3s/$f.yaml" ]; then
           echo "Applying k3s/$f.yaml..."
           envsubst < "k3s/$f.yaml" | kubectl apply -f - -n ${KUBE_NAMESPACE}

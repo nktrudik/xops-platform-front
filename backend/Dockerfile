@@ -9,7 +9,6 @@ FROM dependencies AS checks
 RUN poetry install --with dev --no-root --no-interaction
 COPY app ./app
 COPY tests ./tests
-COPY data ./data
 CMD ["sh", "-c", "poetry run ruff check . && poetry run ruff format --check . && poetry run mypy . && poetry run bandit -r app && poetry run pytest"]
 
 FROM python:3.13-slim-bookworm AS runtime
@@ -17,7 +16,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH="/app/.venv/bin:$PATH"
 WORKDIR /app
 COPY --from=dependencies /app/.venv ./.venv
 COPY app ./app
-COPY data ./data
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)"

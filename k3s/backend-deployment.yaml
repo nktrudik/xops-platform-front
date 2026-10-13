@@ -26,21 +26,12 @@ spec:
           ports:
             - containerPort: ${BACKEND_PORT}
           env:
-            - name: XOPS_CATALOG_FILE
-              value: /app/data/copilots.json
-            - name: XOPS_DISCOVERY            # kubernetes — реальный discovery через API; mock — из copilots.json
-              value: "kubernetes"
             - name: XOPS_ENVIRONMENT          # dev|prod — фильтр неймспейсов и base_url
               value: ${ENV_PREFIX}
-            - name: XOPS_COPILOT_HOST         # хост для base_url копилотов (iframe + embedding-check)
+            - name: XOPS_COPILOT_HOST         # существующий ingress-хост UI и API копилотов
               value: ${COPILOT_HOST}
             - name: XOPS_PLATFORM_NAMESPACE   # исключить собственный неймспейс из каталога
               value: ${KUBE_NAMESPACE}
-          volumeMounts:
-            - name: copilots
-              mountPath: /app/data/copilots.json
-              subPath: copilots.json
-              readOnly: true
           resources:
             requests:
               memory: "128Mi"
@@ -60,7 +51,3 @@ spec:
               port: ${BACKEND_PORT}
             initialDelaySeconds: 5
             periodSeconds: 10
-      volumes:
-        - name: copilots
-          configMap:
-            name: ${COPILOT_NAME}-copilots

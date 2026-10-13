@@ -1,7 +1,6 @@
 """HTTP-проверка UI, политики iframe, ошибки связи и повтор запроса."""
 
 import asyncio
-from pathlib import Path
 
 import httpx
 import pytest
@@ -10,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.embedding import embedding_restriction
 from app.main import create_app
 from app.settings import Settings
-from tests.test_catalog import deployment, write_catalog
+from tests.test_catalog import MutableSource, deployment
 
 
 @pytest.mark.parametrize(
@@ -26,20 +25,18 @@ from tests.test_catalog import deployment, write_catalog
         ({"Content-Security-Policy": "frame-ancestors https://elsewhere.test"}, "blocked"),
     ],
 )
-def test_policies(tmp_path: Path, headers: dict[str, str], state: str) -> None:
-    path = tmp_path / "copilots.json"
-    write_catalog(path, [deployment(interface={"type": "embedded", "path": "/"})])
+def test_policies(headers: dict[str, str], state: str) -> None:
+    source = MutableSource([deployment(interface={"type": "embedded", "path": "/"})])
     transport = httpx.MockTransport(lambda request: httpx.Response(200, headers=headers))
-    with TestClient(create_app(Settings(catalog_file=path), transport=transport)) as client:
+    with TestClient(create_app(source=source, transport=transport)) as client:
         result = client.get("/api/copilots/test/embedding-check")
         assert result.status_code == 200
         assert result.json()["state"] == state
         assert result.headers["cache-control"] == "no-store"
 
 
-def test_connection_failure_http_error_and_retry(tmp_path: Path) -> None:
-    path = tmp_path / "copilots.json"
-    write_catalog(path, [deployment(interface={"type": "embedded", "path": "/"})])
+def test_connection_failure_http_error_and_retry() -> None:
+    source = MutableSource([deployment(interface={"type": "embedded", "path": "/"})])
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -50,9 +47,7 @@ def test_connection_failure_http_error_and_retry(tmp_path: Path) -> None:
             return httpx.Response(503)
         return httpx.Response(200)
 
-    with TestClient(
-        create_app(Settings(catalog_file=path), transport=httpx.MockTransport(handler))
-    ) as client:
+    with TestClient(create_app(source=source, transport=httpx.MockTransport(handler))) as client:
         assert client.get("/api/copilots/test/embedding-check").json()["state"] == "unavailable"
         assert "503" in client.get("/api/copilots/test/embedding-check").json()["reason"]
         assert client.get("/api/copilots/test/embedding-check").json()["state"] == "ready"
@@ -60,20 +55,17 @@ def test_connection_failure_http_error_and_retry(tmp_path: Path) -> None:
     assert all(request.headers["cache-control"] == "no-cache" for request in requests)
 
 
-def test_unknown_nonembedded_and_unavailable_do_not_contact_remote(tmp_path: Path) -> None:
-    path = tmp_path / "copilots.json"
+def test_unknown_nonembedded_and_unavailable_do_not_contact_remote() -> None:
     offline = deployment("offline", {"type": "embedded", "path": "/"})
     offline["status"] = "unavailable"
-    write_catalog(path, [deployment("chat"), offline])
+    source = MutableSource([deployment("chat"), offline])
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
         return httpx.Response(200)
 
-    with TestClient(
-        create_app(Settings(catalog_file=path), transport=httpx.MockTransport(handler))
-    ) as client:
+    with TestClient(create_app(source=source, transport=httpx.MockTransport(handler))) as client:
         assert client.get("/api/copilots/unknown/embedding-check").status_code == 404
         assert client.get("/api/copilots/chat/embedding-check").status_code == 409
         assert client.get("/api/copilots/offline/embedding-check").json()["state"] == "unavailable"
@@ -116,9 +108,8 @@ def test_combined_csp_policies_must_all_allow_embedding() -> None:
         ("https://example.test/loop", "unavailable", 6),
     ],
 )
-def test_redirect_policies(tmp_path: Path, location: str, state: str, calls: int) -> None:
-    path = tmp_path / "copilots.json"
-    write_catalog(path, [deployment(interface={"type": "embedded", "path": "/"})])
+def test_redirect_policies(location: str, state: str, calls: int) -> None:
+    source = MutableSource([deployment(interface={"type": "embedded", "path": "/"})])
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -127,16 +118,13 @@ def test_redirect_policies(tmp_path: Path, location: str, state: str, calls: int
             return httpx.Response(200, headers={"X-Frame-Options": "DENY"})
         return httpx.Response(302, headers={"Location": location})
 
-    with TestClient(
-        create_app(Settings(catalog_file=path), transport=httpx.MockTransport(handler))
-    ) as client:
+    with TestClient(create_app(source=source, transport=httpx.MockTransport(handler))) as client:
         assert client.get("/api/copilots/test/embedding-check").json()["state"] == state
     assert len(requests) == calls
 
 
-def test_integration_timeout_is_recoverable(tmp_path: Path) -> None:
-    path = tmp_path / "copilots.json"
-    write_catalog(path, [deployment(interface={"type": "embedded", "path": "/"})])
+def test_integration_timeout_is_recoverable() -> None:
+    source = MutableSource([deployment(interface={"type": "embedded", "path": "/"})])
 
     async def handler(request: httpx.Request) -> httpx.Response:
         await asyncio.sleep(0.1)
@@ -144,7 +132,8 @@ def test_integration_timeout_is_recoverable(tmp_path: Path) -> None:
 
     with TestClient(
         create_app(
-            Settings(catalog_file=path, integration_timeout=0.01),
+            Settings(integration_timeout=0.01),
+            source=source,
             transport=httpx.MockTransport(handler),
         )
     ) as client:

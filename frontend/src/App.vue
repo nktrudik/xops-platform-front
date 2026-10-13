@@ -16,6 +16,6 @@ onBeforeUnmount(stopCatalogPolling)
   </main>
   <footer class="app-footer page-container">
     <span>XOps Platform</span>
-    <span>Демо-режим · Каталог, статусы, чат и доступ используют mock-данные</span>
+    <span>Каталог Copilot · XOps Platform</span>
   </footer>
 </template>

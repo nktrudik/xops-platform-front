@@ -1,4 +1,12 @@
 import { expect, test } from '@playwright/test'
+import { apiCopilots } from '../fixtures'
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/copilots', (route) => route.fulfill({ json: apiCopilots }))
+  await page.route('**/api/copilots/*/chat', (route) =>
+    route.fulfill({ json: { reply: 'Ответ сервиса' } }),
+  )
+})
 
 test('каталог, поиск, адаптивность и локальные шрифты', async ({ page }) => {
   const failures: string[] = []
@@ -6,9 +14,9 @@ test('каталог, поиск, адаптивность и локальные
   await page.goto('/')
   await expect(page.locator('.copilot-card')).toHaveCount(6)
   await expect(
-    page.getByRole('link', { name: 'Открыть Test Agent Alpha', exact: true }),
+    page.getByRole('link', { name: 'Открыть Встроенный сервис', exact: true }),
   ).toBeVisible()
-  await page.getByRole('searchbox', { name: 'Поиск Copilot' }).fill('Figma')
+  await page.getByRole('searchbox', { name: 'Поиск Copilot' }).fill('Внешний')
   await expect(page.locator('.copilot-card')).toHaveCount(1)
   await page.getByRole('searchbox').fill('несуществующее приложение')
   await expect(page.getByRole('heading', { name: 'Ничего не найдено' })).toBeVisible()
@@ -22,13 +30,13 @@ test('каталог, поиск, адаптивность и локальные
   expect(failures).toEqual([])
 })
 
-test('чат отправляет mock-ответ и сохраняет общую навигацию', async ({ page }) => {
+test('чат отправляет запрос через API и сохраняет общую навигацию', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('link', { name: 'Открыть AB-test Copilot', exact: true }).click()
-  await expect(page.getByText('Mock-режим', { exact: true })).toBeVisible()
+  await page.getByRole('link', { name: 'Открыть Чат-сервис', exact: true }).click()
+
   await page.getByRole('textbox', { name: 'Сообщение Copilot' }).fill('Как разбить задачу на шаги?')
   await page.getByRole('button', { name: 'Отправить сообщение' }).click()
-  await expect(page.locator('.message-assistant')).toContainText('демонстрационный ответ')
+  await expect(page.locator('.message-assistant')).toContainText('Ответ сервиса')
   await expect(page.locator('.message-user')).toHaveCount(1)
   await page.getByRole('link', { name: 'Каталог Copilot', exact: true }).last().click()
   await expect(page.locator('.copilot-card')).toHaveCount(6)
@@ -38,13 +46,13 @@ test('удалённый UI отображается внутри платфор
   await page.route('**/api/copilots/*/embedding-check', (route) =>
     route.fulfill({ json: { state: 'ready' } }),
   )
-  await page.route('http://2.59.80.61/dev/test-agent-alpha/**', (route) =>
+  await page.route('https://copilot.test/ui/**', (route) =>
     route.fulfill({
       contentType: 'text/html; charset=utf-8',
       body: '<html lang="ru"><body><h1>Тестовый интерфейс Copilot</h1></body></html>',
     }),
   )
-  await page.goto('/copilots/test-agent-alpha')
+  await page.goto('/copilots/embedded-test')
   await expect(
     page.frameLocator('iframe').getByRole('heading', { name: 'Тестовый интерфейс Copilot' }),
   ).toBeVisible()
@@ -61,7 +69,7 @@ test('повтор и обновление страницы загружают �
   await page.route('**/api/copilots/*/embedding-check', (route) =>
     route.fulfill({ json: { state: 'ready' } }),
   )
-  await page.route('http://2.59.80.61/dev/test-agent-alpha**', (route) => {
+  await page.route('https://copilot.test/ui**', (route) => {
     const url = route.request().url()
     requests.push(url)
     const version = documents.get(url) ?? currentVersion
@@ -72,7 +80,7 @@ test('повтор и обновление страницы загружают �
       body: `<html lang="ru"><body><h1>${version}</h1></body></html>`,
     })
   })
-  await page.goto('/copilots/test-agent-alpha')
+  await page.goto('/copilots/embedded-test')
   await expect(page.frameLocator('iframe').getByRole('heading', { name: 'Версия 1' })).toBeVisible()
   currentVersion = 'Версия 2'
   await page.getByRole('button', { name: 'Повторить', exact: true }).click()
@@ -92,10 +100,10 @@ test('запрет iframe, недоступный Copilot и неизвестн�
       json: { state: 'blocked', reason: 'Приложение запрещает встраивание (X-Frame-Options).' },
     }),
   )
-  await page.goto('/copilots/test-agent-alpha')
+  await page.goto('/copilots/embedded-test')
   await expect(page.getByText('Приложение запрещает встраивание (X-Frame-Options).')).toBeVisible()
   await expect(page.locator('iframe')).toHaveCount(0)
-  await page.goto('/copilots/analytics-copilot')
+  await page.goto('/copilots/maintenance-test')
   await expect(page.getByRole('heading', { name: 'Copilot на обслуживании' })).toBeVisible()
   await page.goto('/copilots/unknown')
   await expect(page.getByRole('heading', { name: 'Copilot не найден' })).toBeVisible()
@@ -110,6 +118,7 @@ test('ошибка API не ломает навигацию и позволяе�
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Каталог недоступен' })).toBeVisible()
   await page.unroute('**/api/copilots')
+  await page.route('**/api/copilots', (route) => route.fulfill({ json: apiCopilots }))
   await page.getByRole('button', { name: 'Повторить попытку' }).click()
   await expect(page.locator('.copilot-card')).toHaveCount(6)
 })

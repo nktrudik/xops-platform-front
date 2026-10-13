@@ -1,80 +1,109 @@
-"""Тесты discovery копилотов по ConfigMap copilot-meta (с фейковыми клиентами)."""
+"""Проверки реального адаптера Kubernetes с подменой границы SDK."""
 
 import asyncio
 import json
-from types import SimpleNamespace
-from typing import Any
+from dataclasses import dataclass
 
+import pytest
+from kubernetes.client.rest import ApiException
+
+from app.discovery import DiscoveryError, to_copilot
 from app.kubernetes import KubernetesCopilotSource
 
 
-def _config_map(namespace: str, data: dict[str, str] | None) -> SimpleNamespace:
-    return SimpleNamespace(metadata=SimpleNamespace(namespace=namespace), data=data)
+@dataclass
+class Response:
+    payload: dict[str, object]
+
+    def to_dict(self) -> dict[str, object]:
+        return self.payload
 
 
-class _FakeCore:
-    """CoreV1Api: отдаёт заранее заданный список copilot-meta ConfigMap'ов."""
+class Core:
+    def __init__(self, namespaces: list[str], metadata: str | None) -> None:
+        self.namespaces = namespaces
+        self.metadata = metadata
+        self.failure = False
 
-    def __init__(self, config_maps: list[SimpleNamespace]) -> None:
-        self._config_maps = config_maps
+    def list_config_map_for_all_namespaces(
+        self, *, field_selector: str, _request_timeout: float
+    ) -> Response:
+        assert field_selector == "metadata.name=copilot-meta"
+        assert _request_timeout == 8
+        if self.failure:
+            raise ApiException(status=403)
+        return Response(
+            {
+                "items": [
+                    {
+                        "metadata": {"namespace": ns},
+                        "data": {"metadata.json": self.metadata} if self.metadata else {},
+                    }
+                    for ns in self.namespaces
+                ]
+            }
+        )
 
-    def list_config_map_for_all_namespaces(self, field_selector: str) -> Any:
-        return SimpleNamespace(items=self._config_maps)
 
-
-class _FakeApps:
-    """AppsV1Api: готовность Deployment по неймспейсу."""
-
+class Apps:
     def __init__(self, ready: set[str]) -> None:
-        self._ready = ready
+        self.ready = ready
+        self.failure = False
 
-    def list_namespaced_deployment(self, namespace: str) -> Any:
-        replicas = 1 if namespace in self._ready else 0
-        status = SimpleNamespace(available_replicas=replicas)
-        return SimpleNamespace(items=[SimpleNamespace(status=status)])
+    def list_deployment_for_all_namespaces(self, *, _request_timeout: float) -> Response:
+        assert _request_timeout == 8
+        if self.failure:
+            raise ApiException(status=503)
+        return Response(
+            {
+                "items": [
+                    {"metadata": {"namespace": ns}, "status": {"available_replicas": 1}}
+                    for ns in self.ready
+                ]
+            }
+        )
 
 
-def test_discovers_registered_copilots_of_current_env() -> None:
-    sales_meta = json.dumps(
-        {
-            "display_name": "Sales",
-            "description": "Продажи",
-            "interface": {"type": "chat"},
-            "icon": "chart",
-        }
+def test_real_discovery_filters_environment_and_tracks_changes() -> None:
+    metadata = json.dumps(
+        {"display_name": "Сервис", "description": "Описание", "interface": {"type": "chat"}}
     )
-    core = _FakeCore(
-        [
-            _config_map("test-agent-alpha-dev", None),  # без metadata.json → дефолты
-            _config_map("sales-copilot-dev", {"metadata.json": sales_meta}),
-            _config_map("foo-prod", None),  # другое окружение — пропустить
-            _config_map("platform-xops-dev", None),  # сама платформа — пропустить
-        ]
-    )
-    apps = _FakeApps(ready={"test-agent-alpha-dev"})
-    source = KubernetesCopilotSource("dev", "10.0.0.1", "platform-xops-dev", core=core, apps=apps)
-
-    result = asyncio.run(source.list_deployments())
-
-    assert {item.copilot_name for item in result} == {"test-agent-alpha", "sales-copilot"}
-
-    alpha = next(item for item in result if item.copilot_name == "test-agent-alpha")
-    assert alpha.base_url == "http://10.0.0.1/dev/test-agent-alpha"
-    assert alpha.status == "available"
-    assert alpha.icon == "sparkles"
-    assert alpha.metadata["interface"] == {"type": "embedded", "path": "/"}
-
-    sales = next(item for item in result if item.copilot_name == "sales-copilot")
-    assert sales.status == "maintenance"  # нет готовых реплик
-    assert sales.icon == "chart"
-    assert sales.metadata["display_name"] == "Sales"
-    assert sales.metadata["interface"] == {"type": "chat"}
-
-
-def test_ignores_namespaces_without_meta() -> None:
-    """Без copilot-meta ConfigMap копилот не попадает в каталог (саморегистрация)."""
-    core = _FakeCore([])  # никто не зарегистрировался
-    apps = _FakeApps(ready=set())
-    source = KubernetesCopilotSource("dev", "host", "platform-xops-dev", core=core, apps=apps)
-
+    core = Core(["first-dev", "second-dev", "other-prod", "platform-xops-dev"], metadata)
+    apps = Apps({"first-dev"})
+    source = KubernetesCopilotSource("dev", "node.test", "platform-xops-dev", core=core, apps=apps)
+    items = asyncio.run(source.list_deployments())
+    assert [item.copilot_name for item in items] == ["first", "second"]
+    assert items[0].base_url == "http://node.test/dev/first"
+    assert items[0].status == "available"
+    assert items[1].status == "unavailable"
+    core.namespaces = ["third-dev"]
+    apps.ready = {"third-dev"}
+    assert asyncio.run(source.list_deployments())[0].copilot_name == "third"
+    core.namespaces = []
     assert asyncio.run(source.list_deployments()) == []
+
+
+@pytest.mark.parametrize("metadata", [None, "invalid", "[]", "{}"])
+def test_missing_metadata_is_not_an_embedded_default(metadata: str | None) -> None:
+    source = KubernetesCopilotSource(
+        "dev",
+        "node.test",
+        "platform-dev",
+        core=Core(["broken-dev"], metadata),
+        apps=Apps({"broken-dev"}),
+    )
+    item = to_copilot(asyncio.run(source.list_deployments())[0])
+    assert item.status == "configuration-error"
+    assert item.interface is None
+
+
+@pytest.mark.parametrize("target", ["core", "apps"])
+def test_api_failures_are_not_reported_as_empty_catalog(target: str) -> None:
+    core, apps = Core([], None), Apps(set())
+    if target == "core":
+        core.failure = True
+    else:
+        apps.failure = True
+    source = KubernetesCopilotSource("dev", "node.test", "platform-dev", core=core, apps=apps)
+    with pytest.raises(DiscoveryError):
+        asyncio.run(source.list_deployments())

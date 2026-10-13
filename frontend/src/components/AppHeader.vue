@@ -14,10 +14,6 @@ import { RouterLink } from 'vue-router'
       <nav aria-label="Основная навигация">
         <RouterLink class="header-link" to="/">Каталог Copilot</RouterLink>
       </nav>
-      <div class="demo-access">
-        <span class="demo-label">Демо-доступ</span
-        ><span class="avatar" aria-label="Демонстрационный пользователь">X</span>
-      </div>
     </div>
   </header>
 </template>

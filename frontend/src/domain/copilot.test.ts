@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { searchCopilots } from './copilot'
-import { mockCopilots } from '../../tests/fixtures'
+import { testCopilots } from '../../tests/fixtures'
 
 describe('Поиск Copilot', () => {
   it('учитывает регистр, пробелы, название, описание и идентификатор', () => {
-    expect(searchCopilots(mockCopilots, '  TEST-agent-ALPHA ')).toHaveLength(1)
-    expect(searchCopilots(mockCopilots, 'анализа результатов')[0]?.id).toBe('architecture-copilot')
-    expect(searchCopilots(mockCopilots, '  ')).toHaveLength(mockCopilots.length)
-    expect(searchCopilots(mockCopilots, 'несуществующий помощник')).toHaveLength(0)
+    expect(searchCopilots(testCopilots, '  EMBEDDED-test ')).toHaveLength(1)
+    expect(searchCopilots(testCopilots, 'анализа результатов')[0]?.id).toBe('chat-test')
+    expect(searchCopilots(testCopilots, '  ')).toHaveLength(testCopilots.length)
+    expect(searchCopilots(testCopilots, 'несуществующий помощник')).toHaveLength(0)
   })
 })

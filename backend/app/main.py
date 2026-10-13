@@ -8,7 +8,8 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
-from app.discovery import CopilotSource, DiscoveryError, MockCopilotSource, get_catalog
+from app.chat import ChatReply, ChatRequest, request_reply
+from app.discovery import CopilotSource, DiscoveryError, get_catalog
 from app.embedding import check_embedding, origin
 from app.kubernetes import KubernetesCopilotSource
 from app.models import Copilot, EmbeddedInterface, EmbeddingResult
@@ -16,12 +17,13 @@ from app.settings import Settings
 
 
 def _build_source(config: Settings) -> CopilotSource:
-    """Источник каталога по настройке: kubernetes (discovery) или mock (файл)."""
-    if config.discovery == "kubernetes":
-        return KubernetesCopilotSource(
-            config.environment, config.copilot_host, config.platform_namespace
-        )
-    return MockCopilotSource(config.catalog_file)
+    """Использует только существующий discovery Kubernetes."""
+    return KubernetesCopilotSource(
+        config.environment,
+        config.copilot_host,
+        config.platform_namespace,
+        timeout=config.integration_timeout,
+    )
 
 
 def create_app(
@@ -66,6 +68,14 @@ def create_app(
     async def catalog(response: Response) -> list[Copilot]:
         response.headers["Cache-Control"] = "no-store"
         return await get_catalog(discovery)
+
+    @application.post("/api/copilots/{copilot_id}/chat", response_model=ChatReply)
+    async def chat(
+        copilot_id: str, body: ChatRequest, request: Request, response: Response
+    ) -> ChatReply:
+        response.headers["Cache-Control"] = "no-store"
+        client = cast(httpx.AsyncClient, request.app.state.integration_client)
+        return await request_reply(discovery, client, copilot_id, body, config.chat_timeout)
 
     @application.get("/api/copilots/{copilot_id}/embedding-check", response_model=EmbeddingResult)
     async def embedding(copilot_id: str, request: Request, response: Response) -> EmbeddingResult:

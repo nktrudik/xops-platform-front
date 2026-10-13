@@ -13,10 +13,13 @@ export async function checkEmbedding(
   copilotId: string,
   signal: AbortSignal,
 ): Promise<EmbeddingResult> {
-  const response = await fetch(`${import.meta.env.BASE_URL}api/copilots/${encodeURIComponent(copilotId)}/embedding-check`, {
-    signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]),
-    cache: 'no-store',
-  })
+  const response = await fetch(
+    `${import.meta.env.BASE_URL}api/copilots/${encodeURIComponent(copilotId)}/embedding-check`,
+    {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]),
+      cache: 'no-store',
+    },
+  )
   if (!response.ok) throw new Error('Не удалось проверить доступность приложения.')
   const result: unknown = await response.json()
   if (typeof result !== 'object' || result === null || !('state' in result)) {

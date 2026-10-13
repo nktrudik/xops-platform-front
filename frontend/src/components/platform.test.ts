@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { createPlatformServices, platformKey } from '../app/context'
-import { mockCopilots } from '../../tests/fixtures'
-import { createMockChatGateway } from '../services/mock-chat'
+import { testCopilots } from '../../tests/fixtures'
+import { createChatGateway } from '../services/chat'
 import type { Copilot } from '../domain/copilot'
 import CatalogView from '../views/CatalogView.vue'
 import ChatPanel from './ChatPanel.vue'
@@ -17,7 +17,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-async function catalogMount(items: readonly Copilot[] = mockCopilots, failure = false) {
+async function catalogMount(items: readonly Copilot[] = testCopilots, failure = false) {
   const services = createPlatformServices(
     {
       list: async () => {
@@ -25,7 +25,7 @@ async function catalogMount(items: readonly Copilot[] = mockCopilots, failure = 
         return items
       },
     },
-    createMockChatGateway(0),
+    createChatGateway(),
   )
   const router = createRouter({
     history: createMemoryHistory(),
@@ -46,8 +46,8 @@ async function catalogMount(items: readonly Copilot[] = mockCopilots, failure = 
 
 describe('Каталог', () => {
   it('рисует добавленный Copilot без изменения компонентов и ищет по данным', async () => {
-    const added = { ...mockCopilots[1]!, id: 'new', name: 'Новый инструмент' }
-    const { wrapper } = await catalogMount([...mockCopilots, added])
+    const added = { ...testCopilots[1]!, id: 'new', name: 'Новый инструмент' }
+    const { wrapper } = await catalogMount([...testCopilots, added])
     expect(wrapper.findAll('article')).toHaveLength(7)
     expect(wrapper.find('a[href="/copilots/new"]').exists()).toBe(true)
     await wrapper.get('input').setValue('новый')
@@ -65,8 +65,8 @@ describe('Каталог', () => {
 
   it('не создаёт ссылки открытия для недоступных Copilot', async () => {
     const { wrapper } = await catalogMount()
-    expect(wrapper.find('a[href="/copilots/analytics-copilot"]').exists()).toBe(false)
-    expect(wrapper.find('a[href="/copilots/research-copilot"]').exists()).toBe(false)
+    expect(wrapper.find('a[href="/copilots/maintenance-test"]').exists()).toBe(false)
+    expect(wrapper.find('a[href="/copilots/upcoming-test"]').exists()).toBe(false)
   })
 })
 
@@ -79,7 +79,7 @@ describe('Чат', () => {
       .mockResolvedValue('Ответ <script>alert(1)</script>')
     const services = createPlatformServices({ list: async () => [] }, { reply })
     const wrapper = mount(ChatPanel, {
-      props: { copilot: mockCopilots[2]! },
+      props: { copilot: testCopilots[2]! },
       global: { provide: { [platformKey as symbol]: services } },
     })
     wrappers.push(wrapper)
@@ -87,7 +87,7 @@ describe('Чат', () => {
     await wrapper.get('textarea').setValue('Как решить задачу?')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
-    expect(wrapper.text()).toContain('Не удалось получить ответ')
+    expect(wrapper.text()).toContain('Сбой')
     await wrapper.get('.chat-error button').trigger('click')
     await flushPromises()
     expect(wrapper.findAll('.message-user')).toHaveLength(1)
@@ -113,7 +113,7 @@ describe('Встроенное приложение', () => {
   ) {
     const services = createPlatformServices(
       { list: async () => [] },
-      createMockChatGateway(),
+      createChatGateway(),
       embedding,
     )
     const wrapper = mount(EmbeddedApp, {

@@ -40,8 +40,7 @@ watch(
 <template>
   <section class="chat-panel surface" aria-label="Чат с Copilot">
     <div class="panel-toolbar">
-      <span class="panel-title"><AppIcon name="chat" />Чат с помощником</span
-      ><span class="mock-badge">Mock-режим</span>
+      <span class="panel-title"><AppIcon name="chat" />Чат с помощником</span>
     </div>
     <div
       ref="history"
@@ -55,8 +54,7 @@ watch(
         <span class="icon-tile"><AppIcon name="sparkles" /></span>
         <h2>С чего начнём?</h2>
         <p>
-          Опишите задачу или задайте вопрос.<br />Этот чат демонстрирует работу платформы; ответы
-          пока формируются без AI.
+          Опишите задачу или задайте вопрос.<br />Сообщение будет отправлено выбранному Copilot.
         </p>
       </div>
       <article

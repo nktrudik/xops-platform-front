@@ -19,8 +19,12 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
       const content = await gateway.reply(copilot, [...messages.value], controller.signal)
       if (!disposed)
         messages.value.push({ id: String(++messageSequence), role: 'assistant', content })
-    } catch {
-      if (!disposed) error.value = 'Не удалось получить ответ. Повторите попытку.'
+    } catch (failure) {
+      if (!disposed)
+        error.value =
+          failure instanceof Error
+            ? `${failure.message} Повторите попытку.`
+            : 'Не удалось получить ответ. Повторите попытку.'
     } finally {
       if (!disposed) pending.value = false
     }

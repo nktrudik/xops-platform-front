@@ -14,53 +14,53 @@ export interface CatalogEntry {
 
 export const apiCopilots: CatalogEntry[] = [
   {
-    id: 'test-agent-alpha',
-    display_name: 'Test Agent Alpha',
+    id: 'embedded-test',
+    display_name: 'Встроенный сервис',
     description: 'Тестовое приложение',
     status: 'available',
     icon: 'sparkles',
-    interface: { type: 'embedded', url: 'http://2.59.80.61/dev/test-agent-alpha/' },
+    interface: { type: 'embedded', url: 'https://copilot.test/ui/' },
   },
   {
-    id: 'development-copilot',
-    display_name: 'Figma Design Copilot',
+    id: 'external-test',
+    display_name: 'Внешний сервис',
     description: 'Проверка файлов',
     status: 'available',
     icon: 'code',
     interface: { type: 'external', url: 'https://example.com' },
   },
   {
-    id: 'architecture-copilot',
-    display_name: 'AB-test Copilot',
+    id: 'chat-test',
+    display_name: 'Чат-сервис',
     description: 'Сервис для анализа результатов A/B-экспериментов',
     status: 'available',
     icon: 'layers',
     interface: { type: 'chat' },
   },
   {
-    id: 'documentation-copilot',
-    display_name: 'Sales Copilot',
+    id: 'second-chat-test',
+    display_name: 'Второй чат',
     description: 'Ваш помощник по продажам',
     status: 'available',
     icon: 'document',
     interface: { type: 'chat' },
   },
   {
-    id: 'analytics-copilot',
-    display_name: 'Techmasters Copilot',
+    id: 'maintenance-test',
+    display_name: 'Обслуживаемый сервис',
     description: 'Технические интервью',
     status: 'maintenance',
     icon: 'chart',
     interface: { type: 'chat' },
   },
   {
-    id: 'research-copilot',
-    display_name: 'Джарвис',
-    description: 'Железный костюм пока в разработке.',
+    id: 'upcoming-test',
+    display_name: 'Ожидаемый сервис',
+    description: 'Сервис ещё не запущен.',
     status: 'coming-soon',
     icon: 'compass',
     interface: { type: 'chat' },
   },
 ]
 
-export const mockCopilots = parseCatalog(apiCopilots)
+export const testCopilots = parseCatalog(apiCopilots)

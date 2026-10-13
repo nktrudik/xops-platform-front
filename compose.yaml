@@ -5,9 +5,16 @@ services:
       target: runtime
     environment:
       XOPS_ENVIRONMENT: dev
-      XOPS_CATALOG_FILE: /app/data/copilots.json
+      XOPS_COPILOT_HOST: ${XOPS_COPILOT_HOST:-}
+      XOPS_PLATFORM_NAMESPACE: ${XOPS_PLATFORM_NAMESPACE:-}
+      KUBECONFIG: /kube/config
     volumes:
-      - ./backend/data:/app/data:ro
+      - type: bind
+        source: ${KUBECONFIG_FILE:-${USERPROFILE:-${HOME}}/.kube/config}
+        target: /kube/config
+        read_only: true
+        bind:
+          create_host_path: false
     init: true
     read_only: true
     tmpfs:
