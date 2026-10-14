@@ -57,9 +57,7 @@ interface:
 
 ## Контракт универсального чата
 
-Копилот реализует **`POST /api/v1/chat/completions`**. Название сохранено, формат — простой JSON без требования совместимости с OpenAI. Один контракт используется между frontend, платформой и копилотом.
-
-Полный внешний адрес: **`/<env>/<COPILOT_NAME>/api/v1/chat/completions`**. Платформа добавляет `/api/v1/chat/completions` к адресу сервиса из discovery; отдельный URL в `copilot.yaml` не нужен. Ingress удаляет `/<env>/<COPILOT_NAME>`, а gateway копилота должен передавать оставшийся `/api/v1/chat/completions` в FastAPI **без удаления `/api`**. Это соответствует `proxy_pass http://backend:8000;` без завершающего `/`, как в `frontend/nginx.conf` платформы. Пример ниже объявляет полный путь FastAPI; дополнительный router prefix `/api` не требуется.
+Копилот реализует **`POST /v1/chat/completions`**.
 
 Запрос платформы к копилоту:
 
@@ -90,7 +88,7 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1)
 
 
-@app.post("/api/v1/chat/completions")
+@app.post("/v1/chat/completions")
 async def chat(request: ChatRequest) -> dict[str, str]:
     question = request.messages[-1].content
     return {"reply": f"Вы спросили: {question}"}
@@ -98,7 +96,7 @@ async def chat(request: ChatRequest) -> dict[str, str]:
 
 Замените вычисление ответа вызовом своего копилота. `request.messages` содержит историю с ролями `user`/`assistant`. Инструкции и доступ к LLM настраиваются самим копилотом. Ошибки возвращаются с HTTP 4xx/5xx. Поле `reply` должно содержать непустую строку; UUID, timestamp и другие служебные поля не нужны. Streaming пока не поддерживается.
 
-Frontend вызывает **`POST /api/copilots/{id}/chat`** платформы с `{"messages":[...]}` и получает `{"reply":"..."}`. Через ingress путь начинается с `/<env>/platform-xops/`. Backend проверяет регистрацию и передаёт эти же сообщения в API копилота. Передаются последние 100 сообщений; вопрос — до 4000 символов, ответ копилота — до 64000. Последнее сообщение — `user`. Таймаут backend по умолчанию 60 секунд (`XOPS_CHAT_TIMEOUT`, максимум 300). При отсутствии ручки, сетевой ошибке, таймауте или некорректном JSON отображается ошибка с повтором.
+Frontend вызывает **`POST /copilots/{id}/chat`** платформы с `{"messages":[...]}` и получает `{"reply":"..."}`. Через ingress путь начинается с `/<env>/platform-xops/`. Backend проверяет регистрацию и передаёт эти же сообщения в API копилота. Передаются последние 100 сообщений; вопрос — до 4000 символов, ответ копилота — до 64000. Последнее сообщение — `user`. Таймаут backend по умолчанию 60 секунд (`XOPS_CHAT_TIMEOUT`, максимум 300). При отсутствии ручки, сетевой ошибке, таймауте или некорректном JSON отображается ошибка с повтором.
 
 ## Проверки и ограничения
 
@@ -106,5 +104,3 @@ Frontend вызывает **`POST /api/copilots/{id}/chat`** платформы 
 docker compose --profile test run --rm --build frontend-checks
 docker compose --profile test run --rm --build backend-checks
 ```
-
-Frontend: ESLint, Prettier, vue-tsc, Vitest, `npm run build`, `npm run test:e2e`. Backend: Ruff, Mypy, Bandit, Pytest. Подмены API используются только в автоматических тестах. Нет mock-режима, SSO, БД и серверного хранения истории чата. Для живой проверки chat-ответа нужен зарегистрированный копилот с реализованной ручкой выше; существование каталога само по себе не означает наличие chat API.
