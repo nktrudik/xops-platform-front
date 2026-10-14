@@ -1,12 +1,11 @@
 # Схема: path /dev/platform-xops/ и /prod/platform-xops/ (DNS не нужен). Наружу только фронт; nginx проксирует /api→backend.
 # ─────────────────────────────────────────────────────────────────────────────
 variables:
-  COPILOT_NAME: "platform-xops"   # неймспейсы platform-xops-dev/prod
+  COPILOT_NAME: "platform-xops"   # путь /<env>/platform-xops, неймспейсы platform-xops-dev/prod
   BACKEND_PORT: "8000"
   FRONTEND_PORT: "8080"
-  # Домен платформы (host-режим): prod → platform.<DOMAIN>, dev → platform-dev.<DOMAIN>.
-  PLATFORM_DOMAIN: "xops.mts.ru"
-  COPILOT_HOST: "2.59.80.61"        # хост для base_url встраиваемых копилотов (они пока на path) — IP NLB/ноды
+  
+  COPILOT_HOST: "2.59.80.61"
   PROMOTE_TO_PROD: "true"
 
 stages:
@@ -33,7 +32,6 @@ build:
         ROBOT_USER="${HARBOR_DEV_ROBOT_USER}"; ROBOT_TOKEN="${HARBOR_DEV_ROBOT_TOKEN}"
       fi
       KUBE_NAMESPACE="${COPILOT_NAME}-${ENV_PREFIX}"
-      if [ "$ENV_PREFIX" = "prod" ]; then PLATFORM_HOST="platform.${PLATFORM_DOMAIN}"; else PLATFORM_HOST="platform-dev.${PLATFORM_DOMAIN}"; fi
       BASE="${HARBOR_BASE}/${HARBOR_PROJECT}/${COPILOT_NAME}"
       BACKEND_IMAGE="${BASE}-backend:${ENV_PREFIX}-${CI_COMMIT_SHORT_SHA}"
       BACKEND_LATEST="${BASE}-backend:${ENV_PREFIX}-latest"
@@ -56,10 +54,10 @@ build:
         echo "🔨 Building backend ${BACKEND_IMAGE}..."
         docker build --cache-from "${BACKEND_LATEST}" -t "${BACKEND_IMAGE}" -t "${BACKEND_LATEST}" ./backend
       fi
-    - echo "🔨 Building frontend ${FRONTEND_IMAGE} (host-режим ${PLATFORM_HOST}, base=/)..."
+    - echo "🔨 Building frontend ${FRONTEND_IMAGE} (base=/${ENV_PREFIX}/${COPILOT_NAME}/)..."
     - |
       docker build \
-        --build-arg VITE_BASE_PATH=/ \
+        --build-arg VITE_BASE_PATH=/${ENV_PREFIX}/${COPILOT_NAME}/ \
         --cache-from "${FRONTEND_LATEST}" -t "${FRONTEND_IMAGE}" -t "${FRONTEND_LATEST}" ./frontend
     - |
       {
@@ -70,7 +68,6 @@ build:
         echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}"
         echo "FRONTEND_LATEST=${FRONTEND_LATEST}"
         echo "FRONTEND_REPLICAS=${FRONTEND_REPLICAS}"
-        echo "PLATFORM_HOST=${PLATFORM_HOST}"
       } >> build.env
   artifacts:
     reports:
@@ -124,12 +121,12 @@ deploy:
         ROBOT_USER="${HARBOR_DEV_ROBOT_USER}"; ROBOT_TOKEN="${HARBOR_DEV_ROBOT_TOKEN}"
       fi
     - mkdir -p /root/.kube && cp /etc/gitlab-runner/k3.crt /root/.kube/k3.crt
-    - export COPILOT_NAME ENV_PREFIX KUBE_NAMESPACE BACKEND_IMAGE FRONTEND_IMAGE BACKEND_PORT FRONTEND_PORT FRONTEND_REPLICAS COPILOT_HOST PLATFORM_HOST
+    - export COPILOT_NAME ENV_PREFIX KUBE_NAMESPACE BACKEND_IMAGE FRONTEND_IMAGE BACKEND_PORT FRONTEND_PORT FRONTEND_REPLICAS COPILOT_HOST
     - kubectl create namespace ${KUBE_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
     - kubectl create secret docker-registry harbor-secret --docker-server="${HARBOR_BASE}" --docker-username="${ROBOT_USER}" --docker-password="${ROBOT_TOKEN}" -n "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
     - |
       # Применяем манифесты в правильном порядке (configmap/quota/netpol/services ДО deployments; ingress последним).
-      for f in rbac configmap-copilots resourcequota limitrange networkpolicy backend-service frontend-service backend-deployment frontend-deployment ingress; do
+      for f in rbac resourcequota limitrange networkpolicy backend-service frontend-service backend-deployment frontend-deployment middleware ingress; do
         if [ -f "k3s/$f.yaml" ]; then
           echo "Applying k3s/$f.yaml..."
           envsubst < "k3s/$f.yaml" | kubectl apply -f - -n ${KUBE_NAMESPACE}
