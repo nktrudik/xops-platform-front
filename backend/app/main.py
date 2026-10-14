@@ -1,4 +1,4 @@
-"""DEV API каталога и проверки встроенных приложений."""
+"""HTTP-маршруты платформы и подключение discovery и интеграций."""
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -8,7 +8,8 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
-from app.chat import ChatReply, ChatRequest, request_reply
+from app.chat import request_reply
+from app.chat_models import ChatReply, ChatRequest
 from app.discovery import CopilotSource, DiscoveryError, get_catalog
 from app.embedding import check_embedding, origin
 from app.kubernetes import KubernetesCopilotSource

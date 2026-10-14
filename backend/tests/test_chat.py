@@ -1,4 +1,4 @@
-"""Передача запроса и приём OpenAI-совместимого ответа через HTTP-прокси платформы."""
+"""Передача истории и приём текстового ответа через HTTP-прокси платформы."""
 
 import asyncio
 import json
@@ -12,29 +12,12 @@ from app.settings import Settings
 from tests.test_catalog import MutableSource, deployment
 
 
-def completion(content: str = "Ответ копилота") -> dict[str, object]:
-    return {
-        "id": "chatcmpl-test",
-        "object": "chat.completion",
-        "created": 1,
-        "model": "test",
-        "choices": [
-            {
-                "index": 0,
-                "message": {"role": "assistant", "content": content},
-                "finish_reason": "stop",
-            }
-        ],
-        "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
-    }
-
-
-def test_backend_sends_openai_contract_and_returns_reply() -> None:
+def test_backend_forwards_only_messages_and_returns_reply() -> None:
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        return httpx.Response(200, json=completion())
+        return httpx.Response(200, json={"reply": "Ответ копилота"})
 
     messages = [
         {"role": "user", "content": "Первый вопрос"},
@@ -51,11 +34,7 @@ def test_backend_sends_openai_contract_and_returns_reply() -> None:
     assert len(requests) == 1
     assert requests[0].method == "POST"
     assert str(requests[0].url) == "https://example.test/service/api/v1/chat/completions"
-    assert json.loads(requests[0].content) == {
-        "model": "test",
-        "messages": messages,
-        "stream": False,
-    }
+    assert json.loads(requests[0].content) == {"messages": messages}
 
 
 @pytest.mark.parametrize("status", [404, 405, 500, 302, 401, 429])
@@ -71,10 +50,14 @@ def test_upstream_http_errors_are_not_demo_answers(status: int) -> None:
         )
         assert response.status_code == 502
         assert "reply" not in response.json()
+        if status in {404, 405}:
+            assert "/api/v1/chat/completions" in response.json()["detail"]
 
 
-@pytest.mark.parametrize("body", [{}, {"choices": []}, completion(""), completion("   ")])
-def test_invalid_completion_is_rejected(body: dict[str, object]) -> None:
+@pytest.mark.parametrize(
+    "body", [{}, [], {"reply": ""}, {"reply": "   "}, {"reply": 42}, {"reply": "x" * 64001}]
+)
+def test_invalid_reply_is_rejected(body: object) -> None:
     transport = httpx.MockTransport(lambda request: httpx.Response(200, json=body))
     with TestClient(
         create_app(source=MutableSource([deployment()]), transport=transport)
@@ -86,6 +69,18 @@ def test_invalid_completion_is_rejected(body: dict[str, object]) -> None:
             ).status_code
             == 502
         )
+
+
+def test_non_json_reply_is_rejected() -> None:
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, text="<html></html>"))
+    with TestClient(
+        create_app(source=MutableSource([deployment()]), transport=transport)
+    ) as client:
+        response = client.post(
+            "/api/copilots/test/chat", json={"messages": [{"role": "user", "content": "Вопрос"}]}
+        )
+        assert response.status_code == 502
+        assert response.json() == {"detail": "Copilot вернул некорректный ответ чата"}
 
 
 @pytest.mark.parametrize(
@@ -103,6 +98,13 @@ def test_bad_request_does_not_contact_copilot(messages: list[dict[str, str]]) ->
         assert (
             client.post("/api/copilots/test/chat", json={"messages": messages}).status_code == 422
         )
+
+
+def test_openapi_has_only_messages_and_reply() -> None:
+    with TestClient(create_app(source=MutableSource([]))) as client:
+        schemas = client.get("/api/openapi.json").json()["components"]["schemas"]
+    assert set(schemas["ChatRequest"]["properties"]) == {"messages"}
+    assert set(schemas["ChatReply"]["properties"]) == {"reply"}
 
 
 @pytest.mark.parametrize(
@@ -130,7 +132,7 @@ def test_route_requires_registered_available_chat(
 def test_timeout_is_recoverable() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         await asyncio.sleep(0.1)
-        return httpx.Response(200, json=completion())
+        return httpx.Response(200, json={"reply": "Ответ копилота"})
 
     with TestClient(
         create_app(

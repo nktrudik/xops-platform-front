@@ -8,13 +8,11 @@ from pydantic import ValidationError
 from app.models import (
     ApiInterface,
     ChatInterface,
-    ChatMetadata,
     Copilot,
     CopilotMetadata,
     Deployment,
     EmbeddedInterface,
     EmbeddedMetadata,
-    ExternalInterface,
     validate_http_url,
 )
 
@@ -43,15 +41,15 @@ def to_copilot(deployment: Deployment) -> Copilot:
             if urlsplit(base_url).query or urlsplit(base_url).fragment:
                 raise ValueError("Адрес сервиса не должен содержать параметры или якорь")
             interface = EmbeddedInterface(url=base_url.rstrip("/") + metadata.interface.path)
-        elif isinstance(metadata.interface, ChatMetadata):
+        elif isinstance(metadata.interface, ChatInterface):
             if not deployment.base_url:
                 raise ValueError("Адрес API сервиса не настроен")
             base_url = validate_http_url(deployment.base_url)
             if urlsplit(base_url).query or urlsplit(base_url).fragment:
                 raise ValueError("Адрес API не должен содержать параметры или якорь")
-            interface = ChatInterface()
+            interface = metadata.interface
         else:
-            interface = ExternalInterface(url=metadata.interface.url)
+            interface = metadata.interface
         return Copilot(
             id=deployment.copilot_name,
             display_name=metadata.display_name,

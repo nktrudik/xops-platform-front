@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 from tests.test_catalog import MutableSource, deployment
-from tests.test_chat import completion
 
 
 def test_real_http_round_trip_preserves_long_reply_in_follow_up() -> None:
@@ -19,7 +18,7 @@ def test_real_http_round_trip_preserves_long_reply_in_follow_up() -> None:
         def do_POST(self) -> None:
             raw: object = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             received.append((self.path, raw))
-            body = json.dumps(completion(answer)).encode()
+            body = json.dumps({"reply": answer}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
@@ -50,7 +49,7 @@ def test_real_http_round_trip_preserves_long_reply_in_follow_up() -> None:
         assert len(received) == 2
         assert received[-1] == (
             "/dev/test/api/v1/chat/completions",
-            {"model": "test", "messages": messages, "stream": False},
+            {"messages": messages},
         )
     finally:
         server.shutdown()

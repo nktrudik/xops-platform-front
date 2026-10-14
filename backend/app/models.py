@@ -45,24 +45,24 @@ class EmbeddedMetadata(BaseModel):
         return value
 
 
-class ChatMetadata(BaseModel):
-    """Универсальный интерфейс чата платформы."""
+class ChatInterface(BaseModel):
+    """Универсальный чат: одинаковый формат в регистрации и каталоге."""
 
     model_config = ConfigDict(extra="forbid")
-    type: Literal["chat"]
+    type: Literal["chat"] = "chat"
 
 
-class ExternalMetadata(BaseModel):
-    """Ссылка на самостоятельный внешний продукт."""
+class ExternalInterface(BaseModel):
+    """Внешняя ссылка: одинаковый формат в регистрации и каталоге."""
 
     model_config = ConfigDict(extra="forbid")
-    type: Literal["external"]
+    type: Literal["external"] = "external"
     url: str
     _validate_url = field_validator("url")(validate_http_url)
 
 
 type MetadataInterface = Annotated[
-    EmbeddedMetadata | ChatMetadata | ExternalMetadata, Field(discriminator="type")
+    EmbeddedMetadata | ChatInterface | ExternalInterface, Field(discriminator="type")
 ]
 
 
@@ -89,19 +89,6 @@ class EmbeddedInterface(BaseModel):
     """Абсолютный адрес встроенного UI для frontend."""
 
     type: Literal["embedded"] = "embedded"
-    url: str
-
-
-class ChatInterface(BaseModel):
-    """Признак универсального чата в API каталога."""
-
-    type: Literal["chat"] = "chat"
-
-
-class ExternalInterface(BaseModel):
-    """Адрес внешней ссылки в API каталога."""
-
-    type: Literal["external"] = "external"
     url: str
 
 
