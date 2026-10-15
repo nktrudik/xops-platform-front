@@ -1,3 +1,5 @@
+# Host-режим: платформа на домене в корне (prod → platform.<DOMAIN>, dev → platform-dev.<DOMAIN>).
+# Наружу выставлен ТОЛЬКО фронт-gateway; /api внутрь проксирует nginx (не Traefik). stripPrefix не нужен — корень домена.
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -7,15 +9,6 @@ spec:
   entryPoints:
     - web
   routes:
-    # 1. Сначала ловим API и шлем сразу в бэкенд
-    - match: Host(`${PLATFORM_HOST}`) && PathPrefix(`/api`)
-      kind: Rule
-      priority: 20 # Приоритет выше, чем у корневого пути
-      services:
-        - name: backend
-          port: ${BACKEND_PORT}
-      
-    # 2. Всё остальное шлем во фронтенд
     - match: Host(`${PLATFORM_HOST}`)
       kind: Rule
       priority: 10
