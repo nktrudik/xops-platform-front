@@ -32,6 +32,22 @@ spec:
               value: ${COPILOT_HOST}
             - name: XOPS_PLATFORM_NAMESPACE   # исключить собственный неймспейс из каталога
               value: ${KUBE_NAMESPACE}
+            - name: XOPS_BASE_PATH
+              value: /${ENV_PREFIX}/${COPILOT_NAME}
+            - name: XOPS_DATABASE_URL
+              value: postgresql://xops@postgres-svc:5432/xops
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ${COPILOT_NAME}-credentials
+                  key: postgres-password
+            - name: XOPS_ADMIN_PASSWORD_HASH
+              valueFrom:
+                secretKeyRef:
+                  name: ${COPILOT_NAME}-credentials
+                  key: admin-password-hash
+            - name: XOPS_COOKIE_SECURE
+              value: "${XOPS_COOKIE_SECURE}"
           resources:
             requests:
               memory: "128Mi"
@@ -47,7 +63,7 @@ spec:
             periodSeconds: 20
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /api/ready
               port: ${BACKEND_PORT}
             initialDelaySeconds: 5
             periodSeconds: 10

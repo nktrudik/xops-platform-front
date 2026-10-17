@@ -1,4 +1,5 @@
 import type { CatalogRepository, Copilot, CopilotIcon, CopilotStatus } from '../domain/copilot'
+import { api } from './api'
 
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -70,12 +71,9 @@ export function createCatalogRepository(): CatalogRepository {
   return {
     async list(signal?: AbortSignal): Promise<readonly Copilot[]> {
       const timeout = AbortSignal.timeout(10000)
-      const response = await fetch(`${import.meta.env.BASE_URL}api/copilots`, {
-        cache: 'no-store',
+      const data = await api('copilots', {
         signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
       })
-      if (!response.ok) throw new Error('API каталога недоступен.')
-      const data: unknown = await response.json()
       return parseCatalog(data)
     },
   }

@@ -48,6 +48,6 @@ describe('API каталога', () => {
 
   it('передаёт ошибку недоступности API вызывающему коду', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 503 })))
-    await expect(createCatalogRepository().list()).rejects.toThrow('API каталога недоступен')
+    await expect(createCatalogRepository().list()).rejects.toThrow('Не удалось выполнить запрос')
   })
 })

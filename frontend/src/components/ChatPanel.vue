@@ -7,7 +7,27 @@ import AppIcon from './AppIcon.vue'
 
 const props = defineProps<{ copilot: Copilot }>()
 const { chat } = usePlatform()
-const { messages, pending, error, send, retry } = useChat(props.copilot, chat)
+const {
+  messages,
+  conversations,
+  current,
+  nextConversation,
+  before,
+  loading,
+  loadingOlder,
+  atLatest,
+  pending,
+  error,
+  loadError,
+  send,
+  retry,
+  select,
+  create,
+  older,
+  latest,
+  listMore,
+  initialize,
+} = useChat(props.copilot, chat)
 const draft = ref('')
 const history = ref<HTMLElement>()
 const input = ref<HTMLTextAreaElement>()
@@ -16,7 +36,7 @@ async function submit(): Promise<void> {
   if (!draft.value.trim() || pending.value || error.value) return
   const text = draft.value
   draft.value = ''
-  await send(text)
+  if (!(await send(text))) draft.value = text
   await nextTick()
   input.value?.focus()
 }
@@ -28,8 +48,28 @@ function onKeydown(event: KeyboardEvent): void {
   }
 }
 
+async function onScroll(): Promise<void> {
+  const element = history.value
+  if (!element || element.scrollTop > 64 || !before.value || loadingOlder.value) return
+  const anchor = element.querySelector('article')
+  const previousTop = anchor?.getBoundingClientRect().top ?? 0
+  await older()
+  await nextTick()
+  if (anchor?.isConnected) element.scrollTop += anchor.getBoundingClientRect().top - previousTop
+}
+
+async function showLatest(): Promise<void> {
+  try {
+    await latest()
+    await nextTick()
+    if (history.value) history.value.scrollTop = history.value.scrollHeight
+  } catch {
+    loadError.value = 'Не удалось загрузить последние сообщения.'
+  }
+}
+
 watch(
-  () => [messages.value.length, pending.value],
+  () => [loading.value, pending.value],
   async () => {
     await nextTick()
     if (history.value) history.value.scrollTop = history.value.scrollHeight
@@ -38,69 +78,172 @@ watch(
 </script>
 
 <template>
-  <section class="chat-panel surface" aria-label="Чат с Copilot">
-    <div class="panel-toolbar">
-      <span class="panel-title"><AppIcon name="chat" />Чат с помощником</span>
-    </div>
-    <div
-      ref="history"
-      class="chat-history"
-      role="log"
-      aria-label="Сообщения чата"
-      aria-live="polite"
-      aria-relevant="additions"
-    >
-      <div v-if="!messages.length" class="chat-welcome">
-        <span class="icon-tile"><AppIcon name="sparkles" /></span>
-        <h2>С чего начнём?</h2>
-        <p>
-          Опишите задачу или задайте вопрос.<br />Сообщение будет отправлено выбранному Copilot.
-        </p>
-      </div>
-      <article
-        v-for="message in messages"
-        :key="message.id"
-        class="message"
-        :class="`message-${message.role}`"
+  <div class="chat-layout">
+    <aside class="dialog-list surface" aria-label="Сохранённые диалоги">
+      <button
+        class="button button-primary new-dialog"
+        :disabled="loading || pending"
+        @click="create"
       >
-        <span class="message-author">{{ message.role === 'user' ? 'Вы' : copilot.name }}</span>
-        <p>{{ message.content }}</p>
-      </article>
-      <div v-if="pending" class="chat-pending" role="status">
-        <span class="spinner" aria-hidden="true" />Помощник готовит ответ…
-      </div>
-    </div>
-    <div v-if="error" class="chat-error" role="alert">
-      <span>{{ error }}</span
-      ><button class="text-button" @click="retry">Повторить</button>
-    </div>
-    <form class="chat-composer" @submit.prevent="submit">
-      <label class="sr-only" for="chat-input">Сообщение Copilot</label
-      ><textarea
-        id="chat-input"
-        ref="input"
-        v-model="draft"
-        rows="2"
-        maxlength="4000"
-        placeholder="Напишите сообщение…"
-        :disabled="pending || !!error"
-        @keydown="onKeydown"
-      /><button
-        class="button button-primary send-button"
-        type="submit"
-        :disabled="!draft.trim() || pending || !!error"
-        aria-label="Отправить сообщение"
-      >
-        <AppIcon name="send" />
+        Новый диалог
       </button>
-    </form>
-    <p class="composer-hint">
-      Enter — отправить · Shift + Enter — новая строка<span>{{ draft.length }} / 4000</span>
-    </p>
-  </section>
+      <h2>Ваши диалоги</h2>
+      <div class="dialog-items">
+        <button
+          v-for="conversation in conversations"
+          :key="conversation.id"
+          class="dialog-item"
+          :aria-pressed="current?.id === conversation.id"
+          :disabled="pending"
+          @click="select(conversation)"
+        >
+          <span>{{ conversation.title }}</span>
+          <small>{{ new Date(conversation.created_at).toLocaleDateString('ru-RU') }}</small>
+        </button>
+      </div>
+      <button v-if="nextConversation" class="text-button" :disabled="pending" @click="listMore">
+        Ещё диалоги
+      </button>
+    </aside>
+    <section class="chat-panel surface" aria-label="Чат с Copilot">
+      <div class="panel-toolbar">
+        <span class="panel-title"><AppIcon name="chat" />Чат с помощником</span>
+        <button v-if="!atLatest" class="text-button" @click="showLatest">
+          К последним сообщениям
+        </button>
+      </div>
+      <div v-if="loadError" class="chat-error" role="alert">
+        {{ loadError }}
+        <button class="text-button" @click="current ? select(current) : initialize()">
+          Повторить загрузку
+        </button>
+      </div>
+      <div
+        ref="history"
+        class="chat-history"
+        role="log"
+        aria-label="Сообщения чата"
+        aria-live="polite"
+        aria-relevant="additions"
+        @scroll="onScroll"
+      >
+        <div v-if="loading || loadingOlder" role="status" class="history-loading">
+          <span class="spinner" />Загружаем сообщения…
+        </div>
+        <p v-else-if="before" class="history-hint">
+          Прокрутите вверх, чтобы увидеть предыдущие сообщения
+        </p>
+        <div v-if="!loading && !messages.length" class="chat-welcome">
+          <span class="icon-tile"><AppIcon name="sparkles" /></span>
+          <h2>С чего начнём?</h2>
+          <p>
+            Опишите задачу или задайте вопрос.<br />Сообщение будет отправлено выбранному Copilot.
+          </p>
+        </div>
+        <article
+          v-for="message in messages"
+          :key="message.id"
+          class="message"
+          :class="`message-${message.role}`"
+          :data-message-id="message.id"
+        >
+          <span class="message-author">{{ message.role === 'user' ? 'Вы' : copilot.name }}</span>
+          <p>{{ message.content }}</p>
+        </article>
+        <div v-if="pending" class="chat-pending" role="status">
+          <span class="spinner" aria-hidden="true" />Помощник готовит ответ…
+        </div>
+      </div>
+      <div v-if="error" class="chat-error" role="alert">
+        <span>{{ error }}</span
+        ><button class="text-button" @click="retry">Повторить</button>
+      </div>
+      <form class="chat-composer" @submit.prevent="submit">
+        <label class="sr-only" for="chat-input">Сообщение Copilot</label
+        ><textarea
+          id="chat-input"
+          ref="input"
+          v-model="draft"
+          rows="2"
+          maxlength="4000"
+          placeholder="Напишите сообщение…"
+          :disabled="loading || !!loadError || pending || !!error"
+          @keydown="onKeydown"
+        /><button
+          class="button button-primary send-button"
+          type="submit"
+          :disabled="!draft.trim() || loading || !!loadError || pending || !!error"
+          aria-label="Отправить сообщение"
+        >
+          <AppIcon name="send" />
+        </button>
+      </form>
+      <p class="composer-hint">
+        Enter — отправить · Shift + Enter — новая строка<span>{{ draft.length }} / 4000</span>
+      </p>
+    </section>
+  </div>
 </template>
 
 <style scoped>
+.chat-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 20px;
+}
+.dialog-list {
+  padding: 20px 14px;
+  align-self: start;
+}
+.dialog-list h2 {
+  font-size: 15px;
+  margin: 24px 8px 12px;
+}
+.new-dialog {
+  width: 100%;
+}
+.dialog-items {
+  max-height: 52vh;
+  overflow-y: auto;
+}
+.dialog-item {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  border: 0;
+  border-radius: 12px;
+  padding: 14px 12px;
+  background: transparent;
+  cursor: pointer;
+}
+.dialog-item[aria-pressed='true'] {
+  background: var(--red-soft);
+}
+.dialog-item:hover {
+  background: var(--background);
+}
+.dialog-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dialog-item small,
+.history-hint {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.history-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.history-loading .spinner {
+  width: 16px;
+  height: 16px;
+}
 .chat-panel {
   overflow: hidden;
 }
@@ -207,6 +350,24 @@ textarea {
   color: var(--red);
 }
 @media (max-width: 640px) {
+  .chat-layout {
+    grid-template-columns: 1fr;
+  }
+  .dialog-list {
+    padding: 16px;
+  }
+  .dialog-items {
+    display: flex;
+    gap: 8px;
+    max-height: 120px;
+  }
+  .dialog-item {
+    min-width: 150px;
+    max-width: 220px;
+  }
+  .dialog-list h2 {
+    margin-top: 14px;
+  }
   .chat-history {
     padding: 20px 16px;
   }

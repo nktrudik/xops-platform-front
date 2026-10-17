@@ -15,6 +15,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+credentials.env
 
 # Локальные корпоративные материалы не хранятся в Git.
 mts_shrift/

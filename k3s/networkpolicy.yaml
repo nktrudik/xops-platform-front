@@ -23,6 +23,8 @@ spec:
       ports:
         - protocol: TCP
           port: ${BACKEND_PORT}
+        - protocol: TCP
+          port: 5432
   egress:
     # Открыто: бэкенд ходит к копилотам (httpx) + DNS
     - {}

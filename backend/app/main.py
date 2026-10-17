@@ -5,13 +5,18 @@ from contextlib import asynccontextmanager
 from typing import cast
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
+from psycopg import Error as PostgresError
+from psycopg_pool import PoolClosed, PoolTimeout
+from starlette.middleware.base import RequestResponseEndpoint
+from starlette.responses import Response as StarletteResponse
 
-from app.chat import request_reply
-from app.chat_models import ChatReply, ChatRequest
+from app.auth import auth_router, require_user
+from app.database import Database
 from app.discovery import CopilotSource, DiscoveryError, get_catalog
 from app.embedding import check_embedding, origin
+from app.history import History, history_router
 from app.kubernetes import KubernetesCopilotSource
 from app.models import Copilot, EmbeddedInterface, EmbeddingResult
 from app.settings import Settings
@@ -31,19 +36,25 @@ def create_app(
     settings: Settings | None = None,
     source: CopilotSource | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
+    history: History | None = None,
 ) -> FastAPI:
     """Создаёт приложение с явно заменяемым discovery и HTTP-транспортом."""
     config = settings or Settings()
     discovery = source or _build_source(config)
+    database = Database(config)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-        async with httpx.AsyncClient(
-            timeout=config.integration_timeout,
-            transport=transport,
-        ) as client:
-            application.state.integration_client = client
-            yield
+        try:
+            if config.database_url.get_secret_value():
+                await database.initialize(config.admin_password_hash.get_secret_value())
+            async with httpx.AsyncClient(
+                timeout=config.integration_timeout, transport=transport
+            ) as client:
+                application.state.integration_client = client
+                yield
+        finally:
+            await database.pool.close()
 
     application = FastAPI(
         title="XOps Platform DEV",
@@ -52,6 +63,28 @@ def create_app(
         openapi_url="/api/openapi.json",
         lifespan=lifespan,
     )
+    application.state.database = database
+    application.include_router(auth_router(database, config))
+    application.include_router(
+        history_router(history or History(database, discovery, config.chat_timeout))
+    )
+
+    @application.middleware("http")
+    async def prevent_private_cache(
+        request: Request, call_next: RequestResponseEndpoint
+    ) -> StarletteResponse:
+        response = await call_next(request)
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
+    async def database_error(request: Request, error: Exception) -> JSONResponse:
+        return JSONResponse(
+            status_code=503, content={"detail": "База данных недоступна. Повторите запрос."}
+        )
+
+    for error_type in (PostgresError, PoolTimeout, PoolClosed):
+        application.add_exception_handler(error_type, database_error)
 
     @application.exception_handler(DiscoveryError)
     async def discovery_error(request: Request, error: DiscoveryError) -> JSONResponse:
@@ -65,20 +98,24 @@ def create_app(
     async def health() -> dict[str, str]:
         return {"status": "ok", "environment": config.environment}
 
-    @application.get("/api/copilots", response_model=list[Copilot])
+    @application.get("/api/ready")
+    async def ready() -> dict[str, str]:
+        async with database.pool.connection() as connection:
+            await connection.execute("SELECT 1")
+        return {"status": "ok"}
+
+    @application.get(
+        "/api/copilots", response_model=list[Copilot], dependencies=[Depends(require_user)]
+    )
     async def catalog(response: Response) -> list[Copilot]:
         response.headers["Cache-Control"] = "no-store"
         return await get_catalog(discovery)
 
-    @application.post("/api/copilots/{copilot_id}/chat", response_model=ChatReply)
-    async def chat(
-        copilot_id: str, body: ChatRequest, request: Request, response: Response
-    ) -> ChatReply:
-        response.headers["Cache-Control"] = "no-store"
-        client = cast(httpx.AsyncClient, request.app.state.integration_client)
-        return await request_reply(discovery, client, copilot_id, body, config.chat_timeout)
-
-    @application.get("/api/copilots/{copilot_id}/embedding-check", response_model=EmbeddingResult)
+    @application.get(
+        "/api/copilots/{copilot_id}/embedding-check",
+        response_model=EmbeddingResult,
+        dependencies=[Depends(require_user)],
+    )
     async def embedding(copilot_id: str, request: Request, response: Response) -> EmbeddingResult:
         response.headers["Cache-Control"] = "no-store"
         copilot = next(

@@ -4,7 +4,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { createPlatformServices, platformKey } from '../app/context'
 import { testCopilots } from '../../tests/fixtures'
 import { createChatGateway } from '../services/chat'
-import type { Copilot } from '../domain/copilot'
+import type { Copilot, ChatGateway, StoredMessage } from '../domain/copilot'
 import CatalogView from '../views/CatalogView.vue'
 import ChatPanel from './ChatPanel.vue'
 import EmbeddedApp from './EmbeddedApp.vue'
@@ -72,17 +72,51 @@ describe('Каталог', () => {
 
 describe('Чат', () => {
   it('отправляет запрос, безопасно отображает текст и повторяет неудачный ответ', async () => {
-    vi.stubGlobal('crypto', {})
-    const reply = vi
+    const conversation = {
+      id: 'dialog',
+      title: 'Новый диалог',
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
+    }
+    let messages: StoredMessage[] = []
+    const send = vi
       .fn()
       .mockRejectedValueOnce(new Error('Сбой'))
-      .mockResolvedValue('Ответ <script>alert(1)</script>')
-    const services = createPlatformServices({ list: async () => [] }, { reply })
+      .mockImplementation(async () => {
+        messages = [
+          {
+            id: '1',
+            request_id: 'request',
+            role: 'user',
+            content: 'Как решить задачу?',
+            status: 'complete',
+            error: null,
+            created_at: '2026-01-01',
+          },
+          {
+            id: '2',
+            request_id: 'request',
+            role: 'assistant',
+            content: 'Ответ <script>alert(1)</script>',
+            status: 'complete',
+            error: null,
+            created_at: '2026-01-01',
+          },
+        ]
+      })
+    const gateway: ChatGateway = {
+      list: async () => ({ conversations: [], next_before: null }),
+      create: async () => conversation,
+      messages: async () => ({ messages, next_before: null }),
+      send,
+    }
+    const services = createPlatformServices({ list: async () => [] }, gateway)
     const wrapper = mount(ChatPanel, {
       props: { copilot: testCopilots[2]! },
       global: { provide: { [platformKey as symbol]: services } },
     })
     wrappers.push(wrapper)
+    await flushPromises()
     expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
     await wrapper.get('textarea').setValue('Как решить задачу?')
     await wrapper.get('form').trigger('submit')

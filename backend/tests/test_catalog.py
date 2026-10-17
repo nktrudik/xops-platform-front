@@ -6,8 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.discovery import DiscoveryError
-from app.main import create_app
 from app.models import Deployment
+from tests.support import create_app
 
 
 def deployment(name: str = "test", interface: object = None) -> dict[str, object]:

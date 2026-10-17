@@ -1,11 +1,10 @@
 import { expect, test } from '@playwright/test'
 import { apiCopilots, type CatalogEntry } from '../fixtures'
+import { installHistoryApi } from '../history-fixture'
 
 test.beforeEach(async ({ page }) => {
+  await installHistoryApi(page)
   await page.route('**/api/copilots', (route) => route.fulfill({ json: apiCopilots }))
-  await page.route('**/api/copilots/*/chat', (route) =>
-    route.fulfill({ json: { reply: 'Ответ сервиса' } }),
-  )
 })
 
 test('polling отражает появление, удаление и недоступность без перезагрузки', async ({ page }) => {

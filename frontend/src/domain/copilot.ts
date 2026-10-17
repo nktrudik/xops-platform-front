@@ -30,7 +30,45 @@ export interface ChatMessage {
 }
 
 export interface ChatGateway {
-  reply(copilot: Copilot, messages: readonly ChatMessage[], signal: AbortSignal): Promise<string>
+  list(copilotId: string, before: string | null, signal: AbortSignal): Promise<ConversationPage>
+  create(copilotId: string, signal: AbortSignal): Promise<Conversation>
+  messages(
+    copilotId: string,
+    conversationId: string,
+    before: string | null,
+    signal: AbortSignal,
+  ): Promise<MessagePage>
+  send(
+    copilotId: string,
+    conversationId: string,
+    requestId: string,
+    content: string,
+    signal: AbortSignal,
+  ): Promise<void>
+}
+
+export interface Conversation {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
+export interface StoredMessage extends ChatMessage {
+  request_id: string
+  status: 'pending' | 'failed' | 'complete'
+  error: string | null
+  created_at: string
+}
+
+export interface ConversationPage {
+  conversations: Conversation[]
+  next_before: string | null
+}
+
+export interface MessagePage {
+  messages: StoredMessage[]
+  next_before: string | null
 }
 
 export const statusLabels: Record<CopilotStatus, string> = {

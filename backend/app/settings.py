@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,3 +15,8 @@ class Settings(BaseSettings):
     platform_namespace: str = ""  # собственный неймспейс — исключается из discovery
     integration_timeout: float = Field(default=8.0, gt=0, le=30)
     chat_timeout: float = Field(default=60.0, gt=0, le=300)
+    database_url: SecretStr = SecretStr("")
+    admin_password_hash: SecretStr = SecretStr("")
+    base_path: str = ""
+    cookie_secure: bool = False
+    session_hours: int = Field(default=12, ge=1, le=168)

@@ -1,10 +1,24 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { onMounted, onBeforeUnmount } from 'vue'
+import { watch, onBeforeUnmount } from 'vue'
+import { router } from './app/router'
+import { session } from './services/api'
 import { usePlatform } from './app/context'
 import AppHeader from './components/AppHeader.vue'
-const { startCatalogPolling, stopCatalogPolling } = usePlatform()
-onMounted(startCatalogPolling)
+const { startCatalogPolling, stopCatalogPolling, clearCatalog } = usePlatform()
+watch(
+  session,
+  (user) => {
+    if (user) startCatalogPolling()
+    else {
+      stopCatalogPolling()
+      clearCatalog()
+      if (router.currentRoute.value.name && router.currentRoute.value.name !== 'login')
+        void router.replace({ name: 'login' })
+    }
+  },
+  { immediate: true },
+)
 onBeforeUnmount(stopCatalogPolling)
 </script>
 

@@ -7,8 +7,8 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import create_app
 from app.settings import Settings
+from tests.support import create_app
 from tests.test_catalog import MutableSource, deployment
 
 

@@ -33,6 +33,7 @@ export function createPlatformServices(
           error.value = 'Не удалось обновить каталог. Проверьте соединение и повторите попытку.'
       })
       .finally(() => {
+        if (controller !== current) return
         loading.value = false
         pending = undefined
       })
@@ -51,6 +52,16 @@ export function createPlatformServices(
     controller?.abort()
   }
 
+  function clearCatalog(): void {
+    controller?.abort()
+    controller = undefined
+    pending = undefined
+    copilots.value = []
+    hasLoaded.value = false
+    loading.value = false
+    error.value = ''
+  }
+
   return {
     copilots,
     loading,
@@ -59,6 +70,7 @@ export function createPlatformServices(
     loadCatalog,
     startCatalogPolling,
     stopCatalogPolling,
+    clearCatalog,
     chat,
     embedding,
   }

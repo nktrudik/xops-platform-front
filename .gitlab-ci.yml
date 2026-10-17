@@ -122,11 +122,22 @@ deploy:
       fi
     - mkdir -p /root/.kube && cp /etc/gitlab-runner/k3.crt /root/.kube/k3.crt
     - export COPILOT_NAME ENV_PREFIX KUBE_NAMESPACE BACKEND_IMAGE FRONTEND_IMAGE BACKEND_PORT FRONTEND_PORT FRONTEND_REPLICAS COPILOT_HOST
+    - export XOPS_COOKIE_SECURE="${XOPS_COOKIE_SECURE:-false}"
     - kubectl create namespace ${KUBE_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
     - kubectl create secret docker-registry harbor-secret --docker-server="${HARBOR_BASE}" --docker-username="${ROBOT_USER}" --docker-password="${ROBOT_TOKEN}" -n "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
     - |
+      if [ -n "${POSTGRES_PASSWORD}" ] && [ -n "${XOPS_ADMIN_PASSWORD_HASH}" ]; then
+        umask 077
+        trap 'rm -f credentials.env' EXIT
+        printf '%s\n' "postgres-password=${POSTGRES_PASSWORD}" "admin-password-hash=${XOPS_ADMIN_PASSWORD_HASH}" > credentials.env
+        kubectl create secret generic "${COPILOT_NAME}-credentials" -n "${KUBE_NAMESPACE}" --from-env-file=credentials.env --dry-run=client -o yaml | kubectl apply -f -
+        rm -f credentials.env
+        trap - EXIT
+      fi
+      kubectl get secret "${COPILOT_NAME}-credentials" -n "${KUBE_NAMESPACE}" >/dev/null || { echo "Задайте POSTGRES_PASSWORD и XOPS_ADMIN_PASSWORD_HASH в защищённых CI/CD variables."; exit 1; }
+    - |
       # Применяем манифесты в правильном порядке (configmap/quota/netpol/services ДО deployments; ingress последним).
-      for f in rbac resourcequota limitrange networkpolicy backend-service frontend-service backend-deployment frontend-deployment middleware ingress; do
+      for f in rbac resourcequota limitrange networkpolicy postgres backend-service frontend-service backend-deployment frontend-deployment middleware ingress; do
         if [ -f "k3s/$f.yaml" ]; then
           echo "Applying k3s/$f.yaml..."
           envsubst < "k3s/$f.yaml" | kubectl apply -f - -n ${KUBE_NAMESPACE}
@@ -140,8 +151,10 @@ deploy:
         for d in backend frontend; do
           kubectl patch deployment "$d" -n ${KUBE_NAMESPACE} --type merge -p "$PATCH"
         done
+        kubectl patch statefulset postgres -n ${KUBE_NAMESPACE} --type merge -p "$PATCH"
       fi
     - echo "⏳ Waiting for rollout..."
+    - kubectl rollout status statefulset/postgres -n ${KUBE_NAMESPACE} --timeout=180s
     - kubectl rollout status deployment/backend -n ${KUBE_NAMESPACE} --timeout=180s
     - kubectl rollout status deployment/frontend -n ${KUBE_NAMESPACE} --timeout=180s
     - echo "✅ Платформа доступна на http://<нода>/${ENV_PREFIX}/${COPILOT_NAME}/"

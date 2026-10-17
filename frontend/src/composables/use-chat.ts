@@ -1,30 +1,199 @@
-import { onBeforeUnmount, ref } from 'vue'
-import type { ChatGateway, ChatMessage, Copilot } from '../domain/copilot'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import type { ChatGateway, Conversation, Copilot, StoredMessage } from '../domain/copilot'
 
-/** Состояние отдельного чата; незавершённый запрос отменяется при закрытии страницы. */
+function requestId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6]! & 15) | 64
+  bytes[8] = (bytes[8]! & 63) | 128
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+/** Загружает страницы истории и сохраняет ключ отправки до подтверждения сервера. */
 export function useChat(copilot: Copilot, gateway: ChatGateway) {
-  const messages = ref<ChatMessage[]>([])
+  const conversations = ref<Conversation[]>([])
+  const current = ref<Conversation | null>(null)
+  const messages = ref<StoredMessage[]>([])
+  const nextConversation = ref<string | null>(null)
+  const before = ref<string | null>(null)
+  const loading = ref(true)
   const pending = ref(false)
+  const loadingOlder = ref(false)
+  const atLatest = ref(true)
   const error = ref('')
-  let controller: AbortController | undefined
+  const loadError = ref('')
+  const controller = new AbortController()
+  let attempt: { id: string; content: string } | undefined
+  let selection = 0
   let disposed = false
-  let messageSequence = 0
 
-  async function getReply(): Promise<void> {
-    if (pending.value || disposed) return
-    controller = new AbortController()
+  function recoverAttempt(): void {
+    const last = messages.value.at(-1)
+    if (last?.role === 'user' && last.status !== 'complete') {
+      attempt = { id: last.request_id, content: last.content }
+      error.value = last.error ?? 'Ответ ещё не получен. Повторите запрос.'
+    } else {
+      attempt = undefined
+      error.value = ''
+    }
+  }
+
+  async function latest(): Promise<void> {
+    if (!current.value) return
+    const page = await gateway.messages(copilot.id, current.value.id, null, controller.signal)
+    if (disposed) return
+    messages.value = page.messages
+    before.value = page.next_before
+    atLatest.value = true
+    recoverAttempt()
+  }
+
+  async function select(conversation: Conversation): Promise<void> {
+    if (pending.value) return
+    const selected = ++selection
+    loading.value = true
+    loadError.value = ''
+    error.value = ''
+    attempt = undefined
+    current.value = conversation
+    messages.value = []
+    before.value = null
+    try {
+      const page = await gateway.messages(copilot.id, conversation.id, null, controller.signal)
+      if (disposed || selected !== selection) return
+      messages.value = page.messages
+      before.value = page.next_before
+      atLatest.value = true
+      recoverAttempt()
+    } catch (failure) {
+      if (!disposed && selected === selection)
+        loadError.value =
+          failure instanceof Error ? failure.message : 'Не удалось загрузить историю.'
+    } finally {
+      if (!disposed && selected === selection) loading.value = false
+    }
+  }
+
+  async function listMore(): Promise<void> {
+    loadError.value = ''
+    try {
+      const page = await gateway.list(copilot.id, nextConversation.value, controller.signal)
+      if (disposed) return
+      conversations.value = [
+        ...new Map(
+          [...conversations.value, ...page.conversations].map((item) => [item.id, item]),
+        ).values(),
+      ]
+      nextConversation.value = page.next_before
+    } catch (failure) {
+      if (!disposed)
+        loadError.value =
+          failure instanceof Error ? failure.message : 'Не удалось загрузить диалоги.'
+    }
+  }
+
+  async function initialize(): Promise<void> {
+    await listMore()
+    if (conversations.value[0]) await select(conversations.value[0])
+    loading.value = false
+  }
+
+  async function create(): Promise<void> {
+    if (pending.value || loading.value) return
+    loadError.value = ''
+    loading.value = true
+    try {
+      const conversation = await gateway.create(copilot.id, controller.signal)
+      if (disposed) return
+      conversations.value.unshift(conversation)
+      await select(conversation)
+    } catch (failure) {
+      if (!disposed)
+        loadError.value = failure instanceof Error ? failure.message : 'Не удалось создать диалог.'
+    } finally {
+      if (!disposed) loading.value = false
+    }
+  }
+
+  async function older(): Promise<void> {
+    if (!current.value || !before.value || loadingOlder.value || loading.value || pending.value)
+      return
+    loadingOlder.value = true
+    const selected = selection
+    try {
+      const page = await gateway.messages(
+        copilot.id,
+        current.value.id,
+        before.value,
+        controller.signal,
+      )
+      if (disposed || selected !== selection) return
+      const merged = [
+        ...new Map([...page.messages, ...messages.value].map((item) => [item.id, item])).values(),
+      ]
+      if (merged.length > 150) atLatest.value = false
+      messages.value = merged.slice(0, 150)
+      before.value = page.next_before
+    } catch (failure) {
+      if (!disposed)
+        loadError.value =
+          failure instanceof Error ? failure.message : 'Не удалось загрузить сообщения.'
+    } finally {
+      loadingOlder.value = false
+    }
+  }
+
+  async function retry(): Promise<void> {
+    if (!attempt || !current.value || pending.value || disposed) return
+    const sending = { ...attempt }
     pending.value = true
     error.value = ''
     try {
-      const content = await gateway.reply(copilot, [...messages.value], controller.signal)
-      if (!disposed)
-        messages.value.push({ id: String(++messageSequence), role: 'assistant', content })
+      await gateway.send(
+        copilot.id,
+        current.value.id,
+        sending.id,
+        sending.content,
+        controller.signal,
+      )
+      await latest()
+      if (!disposed) {
+        current.value.title =
+          conversations.value.find((item) => item.id === current.value?.id)?.title ===
+          'Новый диалог'
+            ? sending.content.slice(0, 80)
+            : current.value.title
+      }
     } catch (failure) {
-      if (!disposed)
-        error.value =
-          failure instanceof Error
-            ? `${failure.message} Повторите попытку.`
-            : 'Не удалось получить ответ. Повторите попытку.'
+      if (!disposed) {
+        const message =
+          failure instanceof Error ? failure.message : 'Не удалось отправить сообщение.'
+        try {
+          await latest()
+        } catch {
+          /* Неподтверждённый вопрос остаётся виден до повтора. */
+        }
+        if (
+          messages.value.some((item) => item.request_id === sending.id && item.role === 'assistant')
+        ) {
+          attempt = undefined
+          error.value = ''
+          return
+        }
+        if (!messages.value.some((item) => item.request_id === sending.id)) {
+          messages.value.push({
+            id: `pending:${sending.id}`,
+            request_id: sending.id,
+            role: 'user',
+            content: sending.content,
+            status: 'pending',
+            error: message,
+            created_at: new Date().toISOString(),
+          })
+        }
+        attempt = sending
+        error.value = message
+      }
     } finally {
       if (!disposed) pending.value = false
     }
@@ -32,15 +201,57 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
 
   async function send(content: string): Promise<boolean> {
     const text = content.trim()
-    if (!text || text.length > 4000 || pending.value || error.value || disposed) return false
-    messages.value.push({ id: String(++messageSequence), role: 'user', content: text })
-    await getReply()
+    if (!text || text.length > 4000 || pending.value || loading.value || error.value || disposed)
+      return false
+    if (!current.value) await create()
+    if (!current.value) return false
+    if (!atLatest.value) {
+      try {
+        await latest()
+      } catch {
+        loadError.value = 'Не удалось загрузить последние сообщения.'
+        return false
+      }
+      if (error.value) return false
+    }
+    attempt = { id: requestId(), content: text }
+    messages.value.push({
+      id: `pending:${attempt.id}`,
+      role: 'user',
+      content: text,
+      request_id: attempt.id,
+      status: 'pending',
+      error: null,
+      created_at: new Date().toISOString(),
+    })
+    await retry()
     return true
   }
 
+  onMounted(initialize)
   onBeforeUnmount(() => {
     disposed = true
-    controller?.abort()
+    controller.abort()
   })
-  return { messages, pending, error, send, retry: getReply }
+  return {
+    conversations,
+    current,
+    messages,
+    nextConversation,
+    before,
+    loading,
+    pending,
+    loadingOlder,
+    atLatest,
+    error,
+    loadError,
+    send,
+    retry,
+    select,
+    create,
+    older,
+    latest,
+    listMore,
+    initialize,
+  }
 }
