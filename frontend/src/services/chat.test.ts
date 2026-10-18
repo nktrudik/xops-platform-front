@@ -7,6 +7,15 @@ afterEach(() => {
 })
 
 describe('HTTP-чат', () => {
+  it('удаляет выбранный диалог через API платформы', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetch)
+    await createChatGateway().remove('chat-test', 'dialog', new AbortController().signal)
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/copilots/chat-test/conversations/dialog',
+      expect.objectContaining({ method: 'DELETE', credentials: 'same-origin' }),
+    )
+  })
   it('отправляет новый вопрос с идентификаторами диалога и повтора', async () => {
     vi.stubEnv('BASE_URL', '/dev/platform-xops/')
     const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ reply: 'Ответ API' })))

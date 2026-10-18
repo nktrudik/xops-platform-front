@@ -36,6 +36,14 @@ export async function installHistoryApi(page: Page): Promise<void> {
         await route.fulfill({
           json: { conversations: dialogs.get(copilot) ?? [], next_before: null },
         })
+    } else if (request.method() === 'DELETE' && url.pathname.includes('/conversations/')) {
+      const id = url.pathname.split('/conversations/')[1] ?? ''
+      dialogs.set(
+        copilot,
+        (dialogs.get(copilot) ?? []).filter((item) => item.id !== id),
+      )
+      messages.delete(id)
+      await route.fulfill({ status: 204 })
     } else if (url.pathname.endsWith('/messages')) {
       const id = url.pathname.split('/conversations/')[1]?.split('/')[0] ?? ''
       await route.fulfill({ json: { messages: messages.get(id) ?? [], next_before: null } })

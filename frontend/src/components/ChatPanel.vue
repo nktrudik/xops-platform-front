@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
-import type { Copilot } from '../domain/copilot'
+import type { Conversation, Copilot } from '../domain/copilot'
 import { usePlatform } from '../app/context'
 import { useChat } from '../composables/use-chat'
 import AppIcon from './AppIcon.vue'
+import DeleteConversationDialog from './DeleteConversationDialog.vue'
 
 const props = defineProps<{ copilot: Copilot }>()
 const { chat } = usePlatform()
@@ -17,12 +18,14 @@ const {
   loadingOlder,
   atLatest,
   pending,
+  deleting,
   error,
   loadError,
   send,
   retry,
   select,
   create,
+  remove,
   older,
   latest,
   listMore,
@@ -31,9 +34,32 @@ const {
 const draft = ref('')
 const history = ref<HTMLElement>()
 const input = ref<HTMLTextAreaElement>()
+const deleteTarget = ref<Conversation | null>(null)
+const deleteError = ref('')
+const newDialogButton = ref<HTMLButtonElement>()
+
+function askDelete(conversation: Conversation): void {
+  deleteError.value = ''
+  deleteTarget.value = conversation
+}
+
+async function confirmDelete(): Promise<void> {
+  if (!deleteTarget.value || deleting.value) return
+  const active = current.value?.id === deleteTarget.value.id
+  deleteError.value = ''
+  try {
+    await remove(deleteTarget.value)
+    if (active) draft.value = ''
+    deleteTarget.value = null
+    await nextTick()
+    newDialogButton.value?.focus()
+  } catch (failure) {
+    deleteError.value = failure instanceof Error ? failure.message : 'Не удалось удалить диалог.'
+  }
+}
 
 async function submit(): Promise<void> {
-  if (!draft.value.trim() || pending.value || error.value) return
+  if (!draft.value.trim() || pending.value || deleting.value) return
   const text = draft.value
   draft.value = ''
   if (!(await send(text))) draft.value = text
@@ -81,27 +107,42 @@ watch(
   <div class="chat-layout">
     <aside class="dialog-list surface" aria-label="Сохранённые диалоги">
       <button
+        ref="newDialogButton"
         class="button button-primary new-dialog"
-        :disabled="loading || pending"
+        :disabled="loading || pending || deleting"
         @click="create"
       >
         Новый диалог
       </button>
       <h2>Ваши диалоги</h2>
       <div class="dialog-items">
-        <button
-          v-for="conversation in conversations"
-          :key="conversation.id"
-          class="dialog-item"
-          :aria-pressed="current?.id === conversation.id"
-          :disabled="pending"
-          @click="select(conversation)"
-        >
-          <span>{{ conversation.title }}</span>
-          <small>{{ new Date(conversation.created_at).toLocaleDateString('ru-RU') }}</small>
-        </button>
+        <div v-for="conversation in conversations" :key="conversation.id" class="dialog-row">
+          <button
+            class="dialog-item"
+            :aria-pressed="current?.id === conversation.id"
+            :disabled="pending || deleting"
+            @click="select(conversation)"
+          >
+            <span>{{ conversation.title }}</span>
+            <small>{{ new Date(conversation.created_at).toLocaleDateString('ru-RU') }}</small>
+          </button>
+          <button
+            class="icon-button dialog-delete"
+            :aria-label="`Удалить диалог «${conversation.title}»`"
+            title="Удалить диалог"
+            :disabled="loading || pending || deleting"
+            @click="askDelete(conversation)"
+          >
+            <AppIcon name="trash" />
+          </button>
+        </div>
       </div>
-      <button v-if="nextConversation" class="text-button" :disabled="pending" @click="listMore">
+      <button
+        v-if="nextConversation"
+        class="text-button"
+        :disabled="pending || deleting"
+        @click="listMore"
+      >
         Ещё диалоги
       </button>
     </aside>
@@ -149,6 +190,9 @@ watch(
         >
           <span class="message-author">{{ message.role === 'user' ? 'Вы' : copilot.name }}</span>
           <p>{{ message.content }}</p>
+          <small v-if="message.status === 'failed'" class="message-failed">{{
+            message.error ?? 'Ответ не был получен'
+          }}</small>
         </article>
         <div v-if="pending" class="chat-pending" role="status">
           <span class="spinner" aria-hidden="true" />Помощник готовит ответ…
@@ -156,7 +200,9 @@ watch(
       </div>
       <div v-if="error" class="chat-error" role="alert">
         <span>{{ error }}</span
-        ><button class="text-button" @click="retry">Повторить</button>
+        ><button class="text-button" :disabled="pending || deleting" @click="retry">
+          Повторить
+        </button>
       </div>
       <form class="chat-composer" @submit.prevent="submit">
         <label class="sr-only" for="chat-input">Сообщение Copilot</label
@@ -167,12 +213,12 @@ watch(
           rows="2"
           maxlength="4000"
           placeholder="Напишите сообщение…"
-          :disabled="loading || !!loadError || pending || !!error"
+          :disabled="loading || !!loadError || pending || deleting"
           @keydown="onKeydown"
         /><button
           class="button button-primary send-button"
           type="submit"
-          :disabled="!draft.trim() || loading || !!loadError || pending || !!error"
+          :disabled="!draft.trim() || loading || !!loadError || pending || deleting"
           aria-label="Отправить сообщение"
         >
           <AppIcon name="send" />
@@ -182,6 +228,14 @@ watch(
         Enter — отправить · Shift + Enter — новая строка<span>{{ draft.length }} / 4000</span>
       </p>
     </section>
+    <DeleteConversationDialog
+      v-if="deleteTarget"
+      :title="deleteTarget.title"
+      :pending="deleting"
+      :error="deleteError"
+      @cancel="deleteTarget = null"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -207,6 +261,7 @@ watch(
   overflow-y: auto;
 }
 .dialog-item {
+  min-width: 0;
   width: 100%;
   display: grid;
   gap: 6px;
@@ -216,6 +271,25 @@ watch(
   padding: 14px 12px;
   background: transparent;
   cursor: pointer;
+}
+.dialog-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.dialog-delete {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.dialog-delete:hover {
+  color: var(--red);
+  background: var(--red-soft);
+}
+.message-failed {
+  display: block;
+  color: var(--red);
+  line-height: 1.5;
+  margin-top: 10px;
 }
 .dialog-item[aria-pressed='true'] {
   background: var(--red-soft);
@@ -361,9 +435,9 @@ textarea {
     gap: 8px;
     max-height: 120px;
   }
-  .dialog-item {
-    min-width: 150px;
-    max-width: 220px;
+  .dialog-row {
+    min-width: 180px;
+    max-width: 250px;
   }
   .dialog-list h2 {
     margin-top: 14px;

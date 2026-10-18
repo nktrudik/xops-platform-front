@@ -18,6 +18,7 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
   const before = ref<string | null>(null)
   const loading = ref(true)
   const pending = ref(false)
+  const deleting = ref(false)
   const loadingOlder = ref(false)
   const atLatest = ref(true)
   const error = ref('')
@@ -25,6 +26,7 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
   const controller = new AbortController()
   let attempt: { id: string; content: string } | undefined
   let selection = 0
+  let listVersion = 0
   let disposed = false
 
   function recoverAttempt(): void {
@@ -40,8 +42,9 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
 
   async function latest(): Promise<void> {
     if (!current.value) return
+    const selected = selection
     const page = await gateway.messages(copilot.id, current.value.id, null, controller.signal)
-    if (disposed) return
+    if (disposed || selected !== selection) return
     messages.value = page.messages
     before.value = page.next_before
     atLatest.value = true
@@ -49,7 +52,7 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
   }
 
   async function select(conversation: Conversation): Promise<void> {
-    if (pending.value) return
+    if (pending.value || deleting.value) return
     const selected = ++selection
     loading.value = true
     loadError.value = ''
@@ -75,10 +78,12 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
   }
 
   async function listMore(): Promise<void> {
+    if (deleting.value) return
+    const version = listVersion
     loadError.value = ''
     try {
       const page = await gateway.list(copilot.id, nextConversation.value, controller.signal)
-      if (disposed) return
+      if (disposed || version !== listVersion) return
       conversations.value = [
         ...new Map(
           [...conversations.value, ...page.conversations].map((item) => [item.id, item]),
@@ -86,7 +91,7 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
       ]
       nextConversation.value = page.next_before
     } catch (failure) {
-      if (!disposed)
+      if (!disposed && version === listVersion)
         loadError.value =
           failure instanceof Error ? failure.message : 'Не удалось загрузить диалоги.'
     }
@@ -99,7 +104,7 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
   }
 
   async function create(): Promise<void> {
-    if (pending.value || loading.value) return
+    if (pending.value || loading.value || deleting.value) return
     loadError.value = ''
     loading.value = true
     try {
@@ -113,6 +118,43 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
     } finally {
       if (!disposed) loading.value = false
     }
+  }
+
+  async function remove(conversation: Conversation): Promise<void> {
+    if (pending.value || loading.value || deleting.value) return
+    deleting.value = true
+    try {
+      await gateway.remove(copilot.id, conversation.id, controller.signal)
+      if (disposed) return
+      listVersion++
+      conversations.value = conversations.value.filter((item) => item.id !== conversation.id)
+      if (current.value?.id === conversation.id) {
+        selection++
+        current.value = null
+        messages.value = []
+        before.value = null
+        atLatest.value = true
+        attempt = undefined
+        error.value = ''
+        loadError.value = ''
+      }
+      // Курсор списка мог ссылаться на удалённый диалог — обновляем первую страницу.
+      try {
+        const page = await gateway.list(copilot.id, null, controller.signal)
+        if (disposed) return
+        conversations.value = page.conversations
+        nextConversation.value = page.next_before
+        if (current.value && !conversations.value.some((item) => item.id === current.value?.id)) {
+          conversations.value.push(current.value)
+        }
+      } catch {
+        nextConversation.value = null
+        loadError.value = 'Диалог удалён. Не удалось обновить список диалогов.'
+      }
+    } finally {
+      deleting.value = false
+    }
+    if (!disposed && !current.value && conversations.value[0]) await select(conversations.value[0])
   }
 
   async function older(): Promise<void> {
@@ -144,7 +186,7 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
   }
 
   async function retry(): Promise<void> {
-    if (!attempt || !current.value || pending.value || disposed) return
+    if (!attempt || !current.value || pending.value || deleting.value || disposed) return
     const sending = { ...attempt }
     pending.value = true
     error.value = ''
@@ -201,7 +243,7 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
 
   async function send(content: string): Promise<boolean> {
     const text = content.trim()
-    if (!text || text.length > 4000 || pending.value || loading.value || error.value || disposed)
+    if (!text || text.length > 4000 || pending.value || loading.value || deleting.value || disposed)
       return false
     if (!current.value) await create()
     if (!current.value) return false
@@ -212,8 +254,8 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
         loadError.value = 'Не удалось загрузить последние сообщения.'
         return false
       }
-      if (error.value) return false
     }
+    error.value = ''
     attempt = { id: requestId(), content: text }
     messages.value.push({
       id: `pending:${attempt.id}`,
@@ -241,6 +283,7 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
     before,
     loading,
     pending,
+    deleting,
     loadingOlder,
     atLatest,
     error,
@@ -249,6 +292,7 @@ export function useChat(copilot: Copilot, gateway: ChatGateway) {
     retry,
     select,
     create,
+    remove,
     older,
     latest,
     listMore,

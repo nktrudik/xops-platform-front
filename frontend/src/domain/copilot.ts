@@ -32,6 +32,7 @@ export interface ChatMessage {
 export interface ChatGateway {
   list(copilotId: string, before: string | null, signal: AbortSignal): Promise<ConversationPage>
   create(copilotId: string, signal: AbortSignal): Promise<Conversation>
+  remove(copilotId: string, conversationId: string, signal: AbortSignal): Promise<void>
   messages(
     copilotId: string,
     conversationId: string,

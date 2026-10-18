@@ -125,6 +125,24 @@ class History:
             messages=list(reversed(page)), next_before=page[-1].id if len(rows) > 30 else None
         )
 
+    async def delete(self, user_id: int, copilot_id: str, conversation_id: UUID) -> None:
+        """Удаляет свой диалог вместе с сообщениями, не прерывая активный ответ."""
+        key = int.from_bytes(conversation_id.bytes[:8], "big", signed=True)
+        async with self.database.pool.connection() as connection, connection.transaction():
+            await self._owned(connection, user_id, copilot_id, conversation_id)
+            cursor = await connection.execute("SELECT pg_try_advisory_xact_lock(%s)", (key,))
+            acquired = await cursor.fetchone()
+            if not acquired or acquired[0] is not True:
+                raise HTTPException(
+                    status_code=409, detail="Дождитесь ответа Copilot и повторите удаление"
+                )
+            deleted = await connection.execute(
+                "DELETE FROM conversations WHERE id = %s AND user_id = %s AND copilot_id = %s",
+                (conversation_id, user_id, copilot_id),
+            )
+            if deleted.rowcount != 1:
+                raise HTTPException(status_code=404, detail="Диалог не найден")
+
     async def send(
         self,
         user_id: int,
@@ -147,6 +165,8 @@ class History:
                     status_code=409, detail="Ответ уже готовится. Повторите запрос позже"
                 )
             try:
+                # Диалог мог быть удалён между первой проверкой и получением блокировки.
+                await self._owned(connection, user_id, copilot_id, conversation_id)
                 return await self._send_locked(
                     connection,
                     copilot_id,
@@ -187,14 +207,22 @@ class History:
             await cursor.execute(
                 "SELECT id::text, request_id, role, content, status, error, created_at "
                 "FROM messages "
-                "WHERE conversation_id = %s AND role = 'user' AND status <> 'complete' LIMIT 1",
+                "WHERE conversation_id = %s AND role = 'user' ORDER BY messages.id DESC LIMIT 1",
                 (conversation_id,),
             )
-            unfinished = await cursor.fetchone()
-            if unfinished and unfinished.request_id != request_id:
-                raise HTTPException(status_code=409, detail="Сначала повторите последнее сообщение")
+            latest = await cursor.fetchone()
+            if existing and latest and latest.request_id != request_id:
+                raise HTTPException(
+                    status_code=409,
+                    detail="В диалоге уже есть новые сообщения. Отправьте новый вопрос",
+                )
         async with connection.transaction():
             if not existing:
+                await connection.execute(
+                    "UPDATE messages SET status = 'failed', error = COALESCE(error, %s) "
+                    "WHERE conversation_id = %s AND role = 'user' AND status = 'pending'",
+                    ("Ответ не был получен", conversation_id),
+                )
                 for item in seed:
                     await connection.execute(
                         "INSERT INTO messages (conversation_id, request_id, role, content) "
@@ -221,8 +249,9 @@ class History:
         async with connection.cursor(row_factory=class_row(ChatMessage)) as cursor:
             await cursor.execute(
                 "SELECT role, content FROM messages WHERE conversation_id = %s "
+                "AND (status = 'complete' OR request_id = %s) "
                 "ORDER BY id DESC LIMIT 100",
-                (conversation_id,),
+                (conversation_id, request_id),
             )
             context = list(reversed(await cursor.fetchall()))
         try:
@@ -265,6 +294,10 @@ def history_router(history: History) -> APIRouter:
     @router.post("/conversations", response_model=Conversation, status_code=201)
     async def create(copilot_id: str, user: CurrentUser) -> Conversation:
         return await history.create(user.id, copilot_id)
+
+    @router.delete("/conversations/{conversation_id}", status_code=204)
+    async def delete(copilot_id: str, conversation_id: UUID, user: CurrentUser) -> None:
+        await history.delete(user.id, copilot_id, conversation_id)
 
     @router.get("/conversations/{conversation_id}/messages", response_model=MessagePage)
     async def messages(

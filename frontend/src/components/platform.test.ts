@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { createPlatformServices, platformKey } from '../app/context'
@@ -10,6 +10,15 @@ import ChatPanel from './ChatPanel.vue'
 import EmbeddedApp from './EmbeddedApp.vue'
 
 const wrappers: VueWrapper[] = []
+const showModal = HTMLDialogElement.prototype.showModal
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true
+  }
+})
+afterAll(() => {
+  HTMLDialogElement.prototype.showModal = showModal
+})
 afterEach(() => {
   wrappers.forEach((wrapper) => wrapper.unmount())
   wrappers.length = 0
@@ -107,6 +116,7 @@ describe('Чат', () => {
     const gateway: ChatGateway = {
       list: async () => ({ conversations: [], next_before: null }),
       create: async () => conversation,
+      remove: async () => {},
       messages: async () => ({ messages, next_before: null }),
       send,
     }
@@ -122,11 +132,141 @@ describe('Чат', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(wrapper.text()).toContain('Сбой')
+    expect(wrapper.get('textarea').attributes('disabled')).toBeUndefined()
     await wrapper.get('.chat-error button').trigger('click')
     await flushPromises()
     expect(wrapper.findAll('.message-user')).toHaveLength(1)
     expect(wrapper.text()).toContain('Ответ <script>alert(1)</script>')
     expect(wrapper.find('script').exists()).toBe(false)
+  })
+
+  it('позволяет продолжить восстановленный диалог после ошибки копилота', async () => {
+    const conversation = {
+      id: 'dialog',
+      title: 'Разговор',
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
+    }
+    const saved: StoredMessage[] = [
+      {
+        id: '1',
+        request_id: 'failed-request',
+        role: 'user',
+        content: 'Неудачный вопрос',
+        status: 'failed',
+        error: 'API Copilot вернул HTTP 500',
+        created_at: '2026-01-01',
+      },
+    ]
+    const send = vi.fn(async (_copilot: string, _dialog: string, key: string, content: string) => {
+      saved.push(
+        { ...saved[0]!, id: '2', request_id: key, content, status: 'complete', error: null },
+        {
+          ...saved[0]!,
+          id: '3',
+          request_id: key,
+          role: 'assistant',
+          content: 'Новый ответ',
+          status: 'complete',
+          error: null,
+        },
+      )
+    })
+    const gateway: ChatGateway = {
+      list: async () => ({ conversations: [conversation], next_before: null }),
+      create: async () => conversation,
+      remove: async () => {},
+      messages: async () => ({ messages: structuredClone(saved), next_before: null }),
+      send,
+    }
+    const wrapper = mount(ChatPanel, {
+      props: { copilot: testCopilots[2]! },
+      global: {
+        provide: {
+          [platformKey as symbol]: createPlatformServices({ list: async () => [] }, gateway),
+        },
+      },
+    })
+    wrappers.push(wrapper)
+    await flushPromises()
+    expect(wrapper.get('textarea').attributes('disabled')).toBeUndefined()
+    await wrapper.get('textarea').setValue('Новый вопрос')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(send.mock.calls[0]?.[2]).not.toBe('failed-request')
+    expect(wrapper.findAll('.message-user')).toHaveLength(2)
+    expect(wrapper.text()).toContain('Новый ответ')
+    expect(wrapper.find('.chat-error').exists()).toBe(false)
+    expect(wrapper.find('.message-failed').text()).toContain('HTTP 500')
+  })
+
+  it('подтверждает удаление, сохраняет диалог при ошибке и переключается после успеха', async () => {
+    const first = {
+      id: 'first',
+      title: 'Первый диалог',
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
+    }
+    const second = { ...first, id: 'second', title: 'Второй диалог' }
+    let dialogs = [first, second]
+    const remove = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Не удалось удалить'))
+      .mockImplementation(async (_copilot: string, id: string) => {
+        dialogs = dialogs.filter((item) => item.id !== id)
+      })
+    const gateway: ChatGateway = {
+      list: async () => ({ conversations: structuredClone(dialogs), next_before: null }),
+      create: async () => first,
+      remove,
+      messages: async (_copilot, id) => ({
+        messages: [
+          {
+            id: '1',
+            request_id: 'key',
+            role: 'assistant',
+            content: `История ${id}`,
+            status: 'complete',
+            error: null,
+            created_at: '2026-01-01',
+          },
+        ],
+        next_before: null,
+      }),
+      send: async () => {},
+    }
+    const wrapper = mount(ChatPanel, {
+      attachTo: document.body,
+      props: { copilot: testCopilots[2]! },
+      global: {
+        provide: {
+          [platformKey as symbol]: createPlatformServices({ list: async () => [] }, gateway),
+        },
+      },
+    })
+    wrappers.push(wrapper)
+    await flushPromises()
+    await wrapper.get('.dialog-delete').trigger('click')
+    await wrapper.get('.delete-cancel').trigger('click')
+    expect(remove).not.toHaveBeenCalled()
+    await wrapper.get('.dialog-delete').trigger('click')
+    await wrapper.get('dialog .button-primary').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('dialog').text()).toContain('Не удалось удалить')
+    expect(wrapper.findAll('.dialog-row')).toHaveLength(2)
+    await wrapper.get('dialog .button-primary').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('dialog').exists()).toBe(false)
+    expect(wrapper.findAll('.dialog-row')).toHaveLength(1)
+    expect(wrapper.text()).toContain('История second')
+    await wrapper.get('.dialog-delete').trigger('click')
+    await wrapper.get('dialog .button-primary').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('.dialog-row')).toHaveLength(0)
+    expect(wrapper.findAll('.message')).toHaveLength(0)
+    expect(wrapper.text()).toContain('С чего начнём?')
+    expect(wrapper.get('textarea').attributes('disabled')).toBeUndefined()
   })
 })
 

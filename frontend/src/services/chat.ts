@@ -58,6 +58,12 @@ export function createChatGateway(): ChatGateway {
     async create(id, signal) {
       return conversation(await api(`${base(id)}/conversations`, { method: 'POST', signal }))
     },
+    async remove(id, conversationId, signal) {
+      await api(`${base(id)}/conversations/${encodeURIComponent(conversationId)}`, {
+        method: 'DELETE',
+        signal,
+      })
+    },
     async messages(id, conversationId, before, signal) {
       const result = record(
         await api(

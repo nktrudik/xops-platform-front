@@ -100,6 +100,7 @@ def test_login_logout_csrf_expiry_and_direct_api_protection(config: Settings) ->
             ).status_code
             == 401
         )
+        assert client.delete(f"/api/copilots/first/conversations/{uuid4()}").status_code == 401
         sign_in(client)
         token = client.cookies[COOKIE]
         assert client.get("/api/auth/me").json()["role"] == "admin"
@@ -207,7 +208,6 @@ def test_failed_copilot_retry_does_not_duplicate_messages(config: Settings) -> N
         assert send(client, conversation, key).status_code == 502
         page = client.get(f"/api/copilots/first/conversations/{conversation}/messages").json()
         assert len(page["messages"]) == 1 and page["messages"][0]["status"] == "failed"
-        assert send(client, conversation, str(uuid4()), "Другой вопрос").status_code == 409
         assert send(client, conversation, key).json() == {"reply": "Сохранённый ответ"}
         assert send(client, conversation, key).status_code == 200
         assert calls == 2
@@ -242,11 +242,105 @@ def test_concurrent_retry_has_one_copilot_call(config: Settings) -> None:
             try:
                 assert entered.wait(5)
                 assert send(client, conversation, key).status_code == 409
+                assert (
+                    client.delete(f"/api/copilots/first/conversations/{conversation}").status_code
+                    == 409
+                )
             finally:
                 release.set()
             assert first.result(timeout=5).status_code == 200
         assert send(client, conversation, key).status_code == 200
         assert calls == 1
+
+
+def test_new_question_after_copilot_error_or_stale_request(config: Settings) -> None:
+    forwarded: list[object] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        forwarded.append(body)
+        return (
+            httpx.Response(500)
+            if len(forwarded) % 2
+            else httpx.Response(200, json={"reply": "Новый ответ"})
+        )
+
+    with Client(create_app(config, source(), httpx.MockTransport(handler))) as client:
+        sign_in(client)
+        for status in ("failed", "pending"):
+            conversation = client.post("/api/copilots/first/conversations").json()["id"]
+            failed_key = str(uuid4())
+            assert send(client, conversation, failed_key, "Неудачный вопрос").status_code == 502
+            if status == "pending":
+                with psycopg.connect(
+                    config.database_url.get_secret_value(), autocommit=True
+                ) as connection:
+                    connection.execute(
+                        "UPDATE messages SET status = 'pending' WHERE conversation_id = %s",
+                        (conversation,),
+                    )
+            assert send(client, conversation, str(uuid4()), "Новый вопрос").status_code == 200
+            assert forwarded[-1] == {"messages": [{"role": "user", "content": "Новый вопрос"}]}
+            rows = client.get(f"/api/copilots/first/conversations/{conversation}/messages").json()[
+                "messages"
+            ]
+            assert [item["content"] for item in rows] == [
+                "Неудачный вопрос",
+                "Новый вопрос",
+                "Новый ответ",
+            ]
+            assert rows[0]["status"] == "failed"
+            assert send(client, conversation, failed_key, "Неудачный вопрос").status_code == 409
+
+
+def test_delete_conversation_checks_owner_and_cascades_messages(config: Settings) -> None:
+    with Client(
+        create_app(
+            config,
+            source(),
+            httpx.MockTransport(lambda request: httpx.Response(200, json={"reply": "Ответ"})),
+        )
+    ) as client:
+        sign_in(client)
+        conversation = client.post("/api/copilots/first/conversations").json()["id"]
+        other = client.post("/api/copilots/first/conversations").json()["id"]
+        assert send(client, conversation, str(uuid4())).status_code == 200
+        path = f"/api/copilots/first/conversations/{conversation}"
+        assert client.delete(path, headers={"X-XOps-CSRF": ""}).status_code == 403
+        assert (
+            client.delete(f"/api/copilots/second/conversations/{conversation}").status_code == 404
+        )
+        with psycopg.connect(config.database_url.get_secret_value(), autocommit=True) as connection:
+            owner = connection.execute(
+                "INSERT INTO users (username, password_hash) VALUES ('other', 'unused') "
+                "RETURNING id"
+            ).fetchone()
+            assert owner is not None
+            foreign = uuid4()
+            connection.execute(
+                "INSERT INTO conversations (id, user_id, copilot_id) VALUES (%s, %s, 'first')",
+                (foreign, owner[0]),
+            )
+            assert client.delete(f"/api/copilots/first/conversations/{foreign}").status_code == 404
+            assert client.delete(path).status_code == 204
+            assert (
+                connection.execute(
+                    "SELECT id FROM messages WHERE conversation_id = %s", (conversation,)
+                ).fetchone()
+                is None
+            )
+            assert (
+                connection.execute(
+                    "SELECT id FROM conversations WHERE id = %s", (foreign,)
+                ).fetchone()
+                is not None
+            )
+        assert client.get(f"{path}/messages").status_code == 404
+        assert send(client, conversation, str(uuid4())).status_code == 404
+        assert [
+            item["id"]
+            for item in client.get("/api/copilots/first/conversations").json()["conversations"]
+        ] == [other]
 
 
 def test_database_write_failure_retains_question_and_retry_is_safe(config: Settings) -> None:
