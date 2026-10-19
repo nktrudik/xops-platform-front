@@ -28,12 +28,18 @@ spec:
           env:
             - name: XOPS_ENVIRONMENT          # dev|prod — фильтр неймспейсов и base_url
               value: ${ENV_PREFIX}
-            - name: XOPS_COPILOT_HOST         # существующий ingress-хост UI и API копилотов
+            - name: XOPS_COPILOT_HOST         # legacy path-схема: ingress-хост/IP копилотов (fallback)
               value: ${COPILOT_HOST}
+            - name: XOPS_COPILOT_BASE_DOMAIN  # host-схема: URL копилота <name>.<env>.<domain>
+              value: ${COPILOT_BASE_DOMAIN}
+            - name: XOPS_COPILOT_SCHEME       # http | https (2-я фаза TLS)
+              value: ${COPILOT_SCHEME}
+            - name: XOPS_INTERNAL_GATEWAY     # ClusterIP Traefik для server-side вызовов без hairpin
+              value: ${INTERNAL_GATEWAY}
             - name: XOPS_PLATFORM_NAMESPACE   # исключить собственный неймспейс из каталога
               value: ${KUBE_NAMESPACE}
-            - name: XOPS_BASE_PATH
-              value: /${ENV_PREFIX}/${COPILOT_NAME}
+            - name: XOPS_BASE_PATH            # host-режим → "" (cookie path "/"); path-схема → /<env>/<name>
+              value: "${PLATFORM_BASE_PATH}"
             - name: XOPS_DATABASE_URL
               value: postgresql://xops@postgres-svc:5432/xops
             - name: PGPASSWORD

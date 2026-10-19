@@ -84,6 +84,8 @@ class KubernetesCopilotSource:
         copilot_host: str,
         platform_namespace: str,
         *,
+        copilot_base_domain: str = "",
+        copilot_scheme: str = "http",
         timeout: float = 8.0,
         core: CoreClient | None = None,
         apps: AppsClient | None = None,
@@ -92,6 +94,8 @@ class KubernetesCopilotSource:
         self._apps = apps
         self._env = environment
         self._host = copilot_host
+        self._base_domain = copilot_base_domain
+        self._scheme = copilot_scheme
         self._platform_ns = platform_namespace
         self._timeout = timeout
 
@@ -137,15 +141,20 @@ class KubernetesCopilotSource:
                 continue
             metadata = self._metadata(registration)
             icon = metadata.pop("icon", "sparkles")
+            # Публичный адрес копилота (для iframe в браузере). Host-схема имеет приоритет над legacy path.
+            if self._base_domain:
+                base_url = f"{self._scheme}://{name}.{self._env}.{self._base_domain}"
+            elif self._host:
+                base_url = f"http://{self._host}/{self._env}/{name}"
+            else:
+                base_url = None
             try:
                 result.append(
                     Deployment.model_validate(
                         {
                             "copilot_name": name,
                             "status": "available" if namespace in ready else "unavailable",
-                            "base_url": f"http://{self._host}/{self._env}/{name}"
-                            if self._host
-                            else None,
+                            "base_url": base_url,
                             "icon": icon,
                             "metadata": metadata,
                         }

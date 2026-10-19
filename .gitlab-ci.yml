@@ -1,11 +1,17 @@
-# Схема: path /dev/platform-xops/ и /prod/platform-xops/ (DNS не нужен). Наружу только фронт; nginx проксирует /api→backend.
+# Host-режим: платформа на <env>.xops-platform.ru. Наружу только фронт; nginx проксирует /api→backend.
 # ─────────────────────────────────────────────────────────────────────────────
 variables:
-  COPILOT_NAME: "platform-xops"   # путь /<env>/platform-xops, неймспейсы platform-xops-dev/prod
+  COPILOT_NAME: "platform-xops"   # неймспейсы platform-xops-dev/prod; host-режим → <env>.xops-platform.ru
   BACKEND_PORT: "8000"
   FRONTEND_PORT: "8080"
-  
-  COPILOT_HOST: "2.59.80.61"
+
+  # ── Host-схема (домены) ───────────────────────────────────────
+  PLATFORM_BASE_DOMAIN: "xops-platform.ru"           # платформа на <env>.xops-platform.ru
+  COPILOT_BASE_DOMAIN: "xops-platform.ru"            # discovery строит URL копилотов <name>.<env>.xops-platform.ru
+  COPILOT_SCHEME: "http"                              # во 2-й фазе (TLS) → https
+  INTERNAL_GATEWAY: "http://traefik.kube-system"     # server-side вызовы копилотов без hairpin (через Host-заголовок)
+  COPILOT_HOST: "2.59.80.61"                            # legacy path-схема (fallback, если base_domain пуст)
+
   PROMOTE_TO_PROD: "true"
 
 stages:
@@ -37,6 +43,11 @@ build:
       BACKEND_LATEST="${BASE}-backend:${ENV_PREFIX}-latest"
       FRONTEND_IMAGE="${BASE}-frontend:${ENV_PREFIX}-${CI_COMMIT_SHORT_SHA}"
       FRONTEND_LATEST="${BASE}-frontend:${ENV_PREFIX}-latest"
+      # Host-режим: PLATFORM_BASE_DOMAIN задан и явного INGRESS_HOST нет → <env>.<domain>; фронт собираем с base=/.
+      if [ -z "${INGRESS_HOST}" ] && [ -n "${PLATFORM_BASE_DOMAIN}" ]; then
+        INGRESS_HOST="${ENV_PREFIX}.${PLATFORM_BASE_DOMAIN}"
+      fi
+      if [ -n "${INGRESS_HOST}" ]; then FE_BASE="/"; else FE_BASE="/${ENV_PREFIX}/${COPILOT_NAME}/"; fi
     - mkdir -p /etc/docker/certs.d/${HARBOR_BASE}
     - echo "${HARBOR_CA_CERT}" > /etc/docker/certs.d/${HARBOR_BASE}/ca.crt
     - echo "${ROBOT_TOKEN}" | docker login ${HARBOR_BASE} -u "${ROBOT_USER}" --password-stdin
@@ -54,10 +65,10 @@ build:
         echo "🔨 Building backend ${BACKEND_IMAGE}..."
         docker build --cache-from "${BACKEND_LATEST}" -t "${BACKEND_IMAGE}" -t "${BACKEND_LATEST}" ./backend
       fi
-    - echo "🔨 Building frontend ${FRONTEND_IMAGE} (base=/${ENV_PREFIX}/${COPILOT_NAME}/)..."
+    - echo "🔨 Building frontend ${FRONTEND_IMAGE} (base=${FE_BASE})..."
     - |
       docker build \
-        --build-arg VITE_BASE_PATH=/${ENV_PREFIX}/${COPILOT_NAME}/ \
+        --build-arg VITE_BASE_PATH=${FE_BASE} \
         --cache-from "${FRONTEND_LATEST}" -t "${FRONTEND_IMAGE}" -t "${FRONTEND_LATEST}" ./frontend
     - |
       {
@@ -68,6 +79,7 @@ build:
         echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}"
         echo "FRONTEND_LATEST=${FRONTEND_LATEST}"
         echo "FRONTEND_REPLICAS=${FRONTEND_REPLICAS}"
+        echo "INGRESS_HOST=${INGRESS_HOST}"
       } >> build.env
   artifacts:
     reports:
@@ -123,6 +135,10 @@ deploy:
     - mkdir -p /root/.kube && cp /etc/gitlab-runner/k3.crt /root/.kube/k3.crt
     - export COPILOT_NAME ENV_PREFIX KUBE_NAMESPACE BACKEND_IMAGE FRONTEND_IMAGE BACKEND_PORT FRONTEND_PORT FRONTEND_REPLICAS COPILOT_HOST
     - export XOPS_COOKIE_SECURE="${XOPS_COOKIE_SECURE:-false}"
+    - |
+      # host-режим (INGRESS_HOST из build.env задан) → base_path пустой (cookie path "/"); иначе path-схема.
+      if [ -n "${INGRESS_HOST}" ]; then PLATFORM_BASE_PATH=""; else PLATFORM_BASE_PATH="/${ENV_PREFIX}/${COPILOT_NAME}"; fi
+      export INGRESS_HOST COPILOT_BASE_DOMAIN COPILOT_SCHEME INTERNAL_GATEWAY PLATFORM_BASE_PATH
     - kubectl create namespace ${KUBE_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
     - kubectl create secret docker-registry harbor-secret --docker-server="${HARBOR_BASE}" --docker-username="${ROBOT_USER}" --docker-password="${ROBOT_TOKEN}" -n "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
     - |
@@ -157,7 +173,7 @@ deploy:
     - kubectl rollout status statefulset/postgres -n ${KUBE_NAMESPACE} --timeout=180s
     - kubectl rollout status deployment/backend -n ${KUBE_NAMESPACE} --timeout=180s
     - kubectl rollout status deployment/frontend -n ${KUBE_NAMESPACE} --timeout=180s
-    - echo "✅ Платформа доступна на http://<нода>/${ENV_PREFIX}/${COPILOT_NAME}/"
+    - echo "✅ Платформа доступна на http://${INGRESS_HOST:-<нода>/${ENV_PREFIX}/${COPILOT_NAME}}/"
   environment:
     name: ${COPILOT_NAME}-${CI_COMMIT_BRANCH}
   rules:

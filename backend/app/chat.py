@@ -1,6 +1,7 @@
 """Передача истории сообщений в API зарегистрированного копилота."""
 
 import asyncio
+from urllib.parse import urlsplit
 
 import httpx
 from fastapi import HTTPException
@@ -17,6 +18,7 @@ async def request_reply(
     copilot_id: str,
     request: ChatRequest,
     timeout: float,
+    internal_gateway: str = "",
 ) -> ChatReply:
     """Проверяет регистрацию и вызывает только адрес из discovery."""
     deployment = next(
@@ -31,13 +33,22 @@ async def request_reply(
         raise HTTPException(status_code=409, detail="Copilot не поддерживает универсальный чат")
     if copilot.status != "available":
         raise HTTPException(status_code=503, detail="Copilot сейчас недоступен")
+    # Server-side: при заданном internal_gateway бьём в ClusterIP Traefik (без hairpin), маршрут — по Host-заголовку
+    # публичного адреса копилота. Иначе — напрямую по публичному base_url (legacy / локальная разработка).
+    if internal_gateway:
+        target = f"{internal_gateway.rstrip('/')}{CHAT_PATH}"
+        headers = {"Host": urlsplit(deployment.base_url).netloc}
+    else:
+        target = f"{deployment.base_url.rstrip('/')}{CHAT_PATH}"
+        headers = {}
     try:
         async with asyncio.timeout(timeout):
             response = await client.post(
-                f"{deployment.base_url.rstrip('/')}{CHAT_PATH}",
+                target,
                 json=request.model_dump(),
                 timeout=timeout,
                 follow_redirects=False,
+                headers=headers,
             )
             if response.status_code in {404, 405}:
                 raise HTTPException(

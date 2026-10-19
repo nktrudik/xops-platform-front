@@ -28,6 +28,8 @@ def _build_source(config: Settings) -> CopilotSource:
         config.environment,
         config.copilot_host,
         config.platform_namespace,
+        copilot_base_domain=config.copilot_base_domain,
+        copilot_scheme=config.copilot_scheme,
         timeout=config.integration_timeout,
     )
 
@@ -66,7 +68,9 @@ def create_app(
     application.state.database = database
     application.include_router(auth_router(database, config))
     application.include_router(
-        history_router(history or History(database, discovery, config.chat_timeout))
+        history_router(
+            history or History(database, discovery, config.chat_timeout, config.internal_gateway)
+        )
     )
 
     @application.middleware("http")
@@ -129,7 +133,11 @@ def create_app(
             raise HTTPException(status_code=409, detail="У Copilot нет встроенного интерфейса")
         client = cast(httpx.AsyncClient, request.app.state.integration_client)
         return await check_embedding(
-            client, copilot.interface.url, origin(str(request.base_url)), config.integration_timeout
+            client,
+            copilot.interface.url,
+            origin(str(request.base_url)),
+            config.integration_timeout,
+            config.internal_gateway,
         )
 
     return application

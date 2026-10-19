@@ -47,8 +47,11 @@ class ConversationPage(BaseModel):
 class History:
     """Хранит историю всех копилотов в общей БД; доступ всегда ограничен владельцем."""
 
-    def __init__(self, database: Database, source: CopilotSource, timeout: float) -> None:
+    def __init__(
+        self, database: Database, source: CopilotSource, timeout: float, internal_gateway: str = ""
+    ) -> None:
         self.database, self.source, self.timeout = database, source, timeout
+        self.internal_gateway = internal_gateway
 
     async def create(self, user_id: int, copilot_id: str) -> Conversation:
         copilot = next(
@@ -256,7 +259,12 @@ class History:
             context = list(reversed(await cursor.fetchall()))
         try:
             reply = await request_reply(
-                self.source, client, copilot_id, ChatRequest(messages=context), self.timeout
+                self.source,
+                client,
+                copilot_id,
+                ChatRequest(messages=context),
+                self.timeout,
+                self.internal_gateway,
             )
         except HTTPException as error:
             await connection.execute(

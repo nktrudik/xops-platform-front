@@ -72,8 +72,29 @@ def embedding_restriction(headers: httpx.Headers, url: str, parent_origin: str) 
     return None
 
 
+def _fetch_target(url: str, internal_gateway: str) -> tuple[str, dict[str, str]]:
+    """Адрес запроса и заголовки для server-side фетча публичного url.
+
+    При internal_gateway соединяемся с ClusterIP Traefik (без hairpin), маршрут задаёт Host-заголовок;
+    иначе запрос идёт напрямую по публичному url. Логика CSP/origin всегда опирается на публичный url.
+    """
+    headers = {"Cache-Control": "no-cache", "Pragma": "no-cache"}
+    if not internal_gateway:
+        return url, headers
+    parts = urlsplit(url)
+    path = parts.path or "/"
+    if parts.query:
+        path = f"{path}?{parts.query}"
+    headers["Host"] = parts.netloc
+    return f"{internal_gateway.rstrip('/')}{path}", headers
+
+
 async def check_embedding(
-    client: httpx.AsyncClient, url: str, parent_origin: str, timeout: float
+    client: httpx.AsyncClient,
+    url: str,
+    parent_origin: str,
+    timeout: float,
+    internal_gateway: str = "",
 ) -> EmbeddingResult:
     """Проверяет только адрес из discovery; произвольный URL клиента не принимается."""
     try:
@@ -90,26 +111,26 @@ async def check_embedding(
                         state="blocked",
                         reason="Браузер блокирует HTTP-приложение на HTTPS-странице.",
                     )
+                request_url, headers = _fetch_target(url, internal_gateway)
                 async with client.stream(
                     "GET",
-                    url,
+                    request_url,
                     follow_redirects=False,
-                    headers={"Cache-Control": "no-cache", "Pragma": "no-cache"},
+                    headers=headers,
                 ) as response:
                     if response.status_code in {301, 302, 303, 307, 308}:
                         location = response.headers.get("location")
                         if not location:
                             break
-                        url = str(response.url.join(location))
+                        # Редирект резолвим относительно ПУБЛИЧНОГО url, чтобы сохранить Host для след. шага.
+                        url = str(httpx.URL(url).join(location))
                         continue
                     if not response.is_success:
                         return EmbeddingResult(
                             state="unavailable",
                             reason=f"Приложение вернуло HTTP {response.status_code}.",
                         )
-                    restriction = embedding_restriction(
-                        response.headers, str(response.url), parent_origin
-                    )
+                    restriction = embedding_restriction(response.headers, url, parent_origin)
                     if restriction:
                         return EmbeddingResult(state="blocked", reason=restriction)
                     return EmbeddingResult(state="ready")
