@@ -106,7 +106,7 @@ describe('Чат', () => {
             id: '2',
             request_id: 'request',
             role: 'assistant',
-            content: 'Ответ <script>alert(1)</script>',
+            content: '**Ответ** <script>alert(1)</script>',
             status: 'complete',
             error: null,
             created_at: '2026-01-01',
@@ -137,6 +137,7 @@ describe('Чат', () => {
     await flushPromises()
     expect(wrapper.findAll('.message-user')).toHaveLength(1)
     expect(wrapper.text()).toContain('Ответ <script>alert(1)</script>')
+    expect(wrapper.get('.message-assistant strong').text()).toBe('Ответ')
     expect(wrapper.find('script').exists()).toBe(false)
   })
 
