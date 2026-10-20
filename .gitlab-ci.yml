@@ -8,8 +8,8 @@ variables:
   # ── Host-схема (домены) ───────────────────────────────────────
   PLATFORM_BASE_DOMAIN: "xops-platform.ru"           # платформа на <env>.xops-platform.ru
   COPILOT_BASE_DOMAIN: "xops-platform.ru"            # discovery строит URL копилотов <name>.<env>.xops-platform.ru
-  COPILOT_SCHEME: "http"                              # во 2-й фазе (TLS) → https
-  INTERNAL_GATEWAY: "http://traefik.kube-system"     # server-side вызовы копилотов без hairpin (через Host-заголовок)
+  COPILOT_SCHEME: "https"                             # discovery отдаёт https://<name>.<env>.xops-platform.ru
+  INTERNAL_GATEWAY: "https://traefik.kube-system"    # server-side вызовы через websecure (TLS, без hairpin и без редиректа)
   COPILOT_HOST: "2.59.80.61"                            # legacy path-схема (fallback, если base_domain пуст)
 
   PROMOTE_TO_PROD: "true"

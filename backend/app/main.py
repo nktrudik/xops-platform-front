@@ -50,8 +50,12 @@ def create_app(
         try:
             if config.database_url.get_secret_value():
                 await database.initialize(config.admin_password_hash.get_secret_value())
+            # internal_gateway=https://traefik.kube-system: SNI не совпадает с wildcard-сертом,
+            # трафик внутрикластерный и доверенный → verify off только для этого (копилотного) клиента.
             async with httpx.AsyncClient(
-                timeout=config.integration_timeout, transport=transport
+                timeout=config.integration_timeout,
+                transport=transport,
+                verify=not config.internal_gateway.startswith("https://"),
             ) as client:
                 application.state.integration_client = client
                 yield
