@@ -9,6 +9,7 @@ defineProps<{ copilot: Copilot }>()
 <template>
   <article
     class="copilot-card surface"
+    :data-format="copilot.interfaceType"
     :class="{ 'card-unavailable': copilot.status !== 'available' }"
   >
     <div class="card-heading">
@@ -36,8 +37,8 @@ defineProps<{ copilot: Copilot }>()
         class="card-open"
         :to="{ name: 'copilot', params: { id: copilot.id } }"
         :aria-label="`Открыть ${copilot.name}`"
-        >Открыть<AppIcon name="arrow"
-      /></RouterLink>
+        >Открыть<span class="card-action-icon"><AppIcon name="arrow" /></span
+      ></RouterLink>
       <span v-else class="unavailable-label">{{
         copilot.status === 'coming-soon' ? 'Скоро на платформе' : statusLabels[copilot.status]
       }}</span>
@@ -47,20 +48,38 @@ defineProps<{ copilot: Copilot }>()
 
 <style scoped>
 .copilot-card {
+  position: relative;
+  overflow: hidden;
   padding: 22px;
-  min-height: 258px;
+  min-height: 268px;
   display: flex;
   flex-direction: column;
   min-width: 0;
   transition:
-    transform 180ms,
+    transform 220ms,
     border-color 180ms,
     box-shadow 180ms;
 }
+.copilot-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--red);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.copilot-card:has(.card-open):is(:hover, :focus-within)::before {
+  transform: scaleY(1);
+}
 .copilot-card:has(.card-open):hover {
-  transform: translateY(-2px);
-  border-color: #bbc1ca;
-  box-shadow: 0 4px 16px rgb(20 25 35 / 4%);
+  transform: translateY(-4px);
+  border-color: #d7afb4;
+  box-shadow: 0 10px 28px rgb(35 23 28 / 8%);
+}
+.copilot-card:has(.card-open):active {
+  transform: translateY(-1px) scale(0.993);
 }
 .card-heading {
   display: flex;
@@ -72,15 +91,23 @@ defineProps<{ copilot: Copilot }>()
   width: 40px;
   height: 40px;
   border-radius: 9px;
-  background: #f1f3f6;
-  color: #525b69;
+  background: #fcebed;
+  color: var(--red);
+}
+.copilot-card[data-format='embedded'] .icon-tile {
+  background: #292a30;
+  color: white;
+}
+.copilot-card[data-format='external'] .icon-tile {
+  background: #eceff4;
+  color: #555c69;
 }
 .card-heading .icon-tile svg {
   width: 21px;
   height: 21px;
 }
 .copilot-card h3 {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 500;
   letter-spacing: -0.35px;
   line-height: 1.4;
@@ -119,20 +146,38 @@ defineProps<{ copilot: Copilot }>()
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--text);
+  color: #353944;
   font-size: 11px;
   font-weight: 500;
   padding: 6px 0 6px 6px;
 }
-.card-open > svg {
+.card-action-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #dfe2e8;
+  border-radius: 50%;
+  transition:
+    background 200ms,
+    border-color 200ms,
+    transform 200ms;
+}
+.card-action-icon > svg {
   width: 16px;
   height: 16px;
   transition: transform 180ms;
 }
+.copilot-card:has(.card-open):is(:hover, :focus-within) .card-action-icon {
+  background: var(--red);
+  color: white;
+  border-color: var(--red);
+  transform: rotate(-35deg);
+}
 .card-open:hover {
   color: var(--red);
 }
-.card-open:hover > svg {
+.card-open:hover .card-action-icon > svg {
   transform: translateX(3px);
 }
 .unavailable-label {
@@ -146,7 +191,7 @@ defineProps<{ copilot: Copilot }>()
   color: #858c96;
   background: #eff1f4;
 }
-:global(.catalog-list) .copilot-card {
+.catalog-list .copilot-card {
   display: grid;
   grid-template-columns: minmax(180px, 0.8fr) minmax(200px, 1.4fr) minmax(180px, 0.8fr);
   align-items: center;
@@ -154,24 +199,24 @@ defineProps<{ copilot: Copilot }>()
   min-height: 0;
   padding: 20px 24px;
 }
-:global(.catalog-list) .card-heading {
+.catalog-list .card-heading {
   grid-column: 1;
   grid-row: 1;
   justify-content: flex-start;
 }
-:global(.catalog-list) .copilot-card h3 {
+.catalog-list .copilot-card h3 {
   grid-column: 1;
   grid-row: 2;
   margin: 0;
   font-size: 15px;
 }
-:global(.catalog-list) .copilot-card p {
+.catalog-list .copilot-card p {
   grid-column: 2;
   grid-row: 1 / 3;
   margin: 0;
   font-size: 12px;
 }
-:global(.catalog-list) .card-bottom {
+.catalog-list .card-bottom {
   grid-column: 3;
   grid-row: 1 / 3;
   display: grid;
@@ -182,15 +227,15 @@ defineProps<{ copilot: Copilot }>()
   border: 0;
 }
 @media (max-width: 1200px) {
-  :global(.catalog-list) .copilot-card {
+  .catalog-list .copilot-card {
     grid-template-columns: minmax(180px, 1fr) minmax(160px, 1fr);
   }
-  :global(.catalog-list) .copilot-card p {
+  .catalog-list .copilot-card p {
     grid-column: 1 / 3;
     grid-row: 3;
     margin-top: 4px;
   }
-  :global(.catalog-list) .card-bottom {
+  .catalog-list .card-bottom {
     grid-column: 2;
   }
 }
@@ -199,23 +244,23 @@ defineProps<{ copilot: Copilot }>()
     min-height: 244px;
     padding: 20px;
   }
-  :global(.catalog-list) .copilot-card {
+  .catalog-list .copilot-card {
     padding: 20px;
     gap: 12px;
     grid-template-columns: minmax(0, 1fr) 100px;
   }
-  :global(.catalog-list) .card-heading {
+  .catalog-list .card-heading {
     grid-column: 1 / 3;
   }
-  :global(.catalog-list) .copilot-card h3 {
+  .catalog-list .copilot-card h3 {
     grid-column: 1 / 3;
     grid-row: 2;
   }
-  :global(.catalog-list) .copilot-card p {
+  .catalog-list .copilot-card p {
     grid-column: 1 / 3;
     grid-row: 3;
   }
-  :global(.catalog-list) .card-bottom {
+  .catalog-list .card-bottom {
     grid-column: 1 / 3;
     grid-row: 4;
     display: flex;
