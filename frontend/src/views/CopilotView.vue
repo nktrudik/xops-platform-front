@@ -23,7 +23,7 @@ watch(
 
 <template>
   <nav class="breadcrumbs" aria-label="Хлебные крошки">
-    <RouterLink to="/" aria-label="Каталог Copilot"
+    <RouterLink :to="{ name: 'catalog' }" aria-label="Каталог Copilot"
       ><AppIcon name="home" /><span>Каталог</span></RouterLink
     ><AppIcon name="chevron" /><span>{{ copilot?.name ?? 'Copilot' }}</span>
   </nav>
@@ -114,7 +114,7 @@ watch(
 }
 h1 {
   margin: 0;
-  font-size: clamp(26px, 3vw, 38px);
+  font-size: clamp(23px, 2.2vw, 30px);
   line-height: 1.25;
   letter-spacing: -0.8px;
 }

@@ -60,8 +60,10 @@ describe('Каталог', () => {
     expect(wrapper.findAll('article')).toHaveLength(7)
     expect(wrapper.find('a[href="/copilots/new"]').exists()).toBe(true)
     await wrapper.get('input').setValue('новый')
+    await flushPromises()
     expect(wrapper.findAll('article')).toHaveLength(1)
     await wrapper.get('input').setValue('ничего такого')
+    await flushPromises()
     expect(wrapper.text()).toContain('Ничего не найдено')
   })
 

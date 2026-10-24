@@ -2,12 +2,16 @@
   --red: #e30611;
   --red-hover: #c7050f;
   --red-soft: color-mix(in srgb, var(--red) 7%, white);
-  --text: #000;
-  --text-secondary: #58595b;
-  --muted: #8a8d8f;
+  --text: #202329;
+  --text-secondary: #626770;
+  --muted: #797f89;
   --white: #fff;
-  --background: #f2f3f6;
-  --border: #e7e8eb;
+  --background: #f5f6f8;
+  --border: #e5e7eb;
+  --graphite: #202329;
+  --sidebar: #202228;
+  --sidebar-text: #b6bac3;
+  --success: #35745a;
   --font-body: 'MTS Text', Arial, sans-serif;
   --font-heading: 'MTS Extended', 'MTS Text', Arial, sans-serif;
 }
