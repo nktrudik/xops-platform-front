@@ -1,12 +1,40 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  shallowRef,
+  useTemplateRef,
+  watch,
+} from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { usePlatform } from '../app/context'
 import AppBrand from './AppBrand.vue'
 import AppIcon from './AppIcon.vue'
-const emit = defineEmits<{ navigate: [] }>()
+const props = defineProps<{ collapsed?: boolean }>()
+const emit = defineEmits<{ navigate: []; toggle: [] }>()
 const route = useRoute()
 const { copilots, hasLoaded } = usePlatform()
+const navigation = useTemplateRef<HTMLElement>('navigation')
+const markerY = shallowRef(0)
+const markerVisible = shallowRef(false)
+async function updateMarker(): Promise<void> {
+  await nextTick()
+  const active = navigation.value?.querySelector<HTMLElement>('.sidebar-link.active')
+  markerVisible.value = !!active
+  if (active) markerY.value = active.offsetTop + (active.offsetHeight - 20) / 2
+}
+watch(() => [route.name, route.fullPath, props.collapsed], updateMarker, { flush: 'post' })
+let observer: ResizeObserver | undefined
+onMounted(() => {
+  if (typeof ResizeObserver !== 'undefined' && navigation.value) {
+    observer = new ResizeObserver(() => void updateMarker())
+    observer.observe(navigation.value)
+  }
+  void updateMarker()
+})
+onBeforeUnmount(() => observer?.disconnect())
 const formats = computed(() => [
   {
     id: 'chat',
@@ -29,16 +57,37 @@ const formats = computed(() => [
 ])
 </script>
 <template>
-  <aside class="app-sidebar" aria-label="Навигация платформы">
-    <div class="sidebar-brand"><AppBrand /><slot /></div>
+  <aside
+    class="app-sidebar"
+    :class="{ 'sidebar-collapsed': collapsed }"
+    aria-label="Навигация платформы"
+  >
+    <div class="sidebar-brand"><AppBrand :compact="collapsed" /><slot /></div>
+    <button
+      class="sidebar-collapse"
+      :aria-label="collapsed ? 'Развернуть навигацию' : 'Свернуть навигацию'"
+      :title="collapsed ? 'Развернуть навигацию' : 'Свернуть навигацию'"
+      :aria-expanded="!collapsed"
+      @click="emit('toggle')"
+    >
+      <AppIcon name="chevron" />
+    </button>
     <div class="workspace-label">
       <span class="workspace-monogram">М</span
       ><span><b>Пространство МТС</b><small>Корпоративная AI-платформа</small></span>
     </div>
-    <nav class="sidebar-nav" aria-label="Основная навигация">
+    <nav ref="navigation" class="sidebar-nav" aria-label="Основная навигация">
+      <span
+        class="sidebar-active-marker"
+        :class="{ 'marker-visible': markerVisible }"
+        :style="{ transform: `translateY(${markerY}px)` }"
+        aria-hidden="true"
+      />
       <span class="sidebar-label">Рабочее пространство</span>
       <RouterLink
         to="/"
+        title="Главная"
+        aria-label="Главная"
         class="sidebar-link"
         :class="{ active: route.name === 'home' }"
         :aria-current="route.name === 'home' ? 'page' : undefined"
@@ -47,6 +96,8 @@ const formats = computed(() => [
       >
       <RouterLink
         :to="{ name: 'catalog' }"
+        title="Каталог Copilot"
+        aria-label="Каталог Copilot"
         class="sidebar-link"
         :class="{ active: route.name === 'catalog' && !route.query.interface }"
         :aria-current="route.name === 'catalog' && !route.query.interface ? 'page' : undefined"
@@ -59,6 +110,8 @@ const formats = computed(() => [
         v-for="format in formats"
         :key="format.id"
         :to="{ name: 'catalog', query: { interface: format.id } }"
+        :title="format.title"
+        :aria-label="format.title"
         class="sidebar-link format-link"
         :class="{ active: route.name === 'catalog' && route.query.interface === format.id }"
         :aria-current="
@@ -125,8 +178,110 @@ const formats = computed(() => [
   margin-top: 5px;
 }
 .sidebar-nav {
+  position: relative;
   display: grid;
   gap: 4px;
+}
+.sidebar-active-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 20px;
+  background: #ff3540;
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform 250ms cubic-bezier(0.22, 0.7, 0.2, 1),
+    opacity 180ms;
+  z-index: 1;
+}
+.marker-visible {
+  opacity: 1;
+}
+.sidebar-collapse {
+  display: none;
+  position: absolute;
+  right: -12px;
+  top: 88px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #d6d9e0;
+  border-radius: 7px;
+  background: #fff;
+  color: #616674;
+  padding: 4px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+  transition:
+    background 180ms,
+    color 180ms;
+}
+.sidebar-collapse > svg {
+  width: 14px;
+  height: 14px;
+  transform: rotate(180deg);
+  transition: transform 220ms;
+}
+.sidebar-collapse:hover {
+  background: var(--red);
+  color: white;
+  border-color: var(--red);
+}
+.desktop-sidebar .sidebar-collapse {
+  display: grid;
+  place-items: center;
+}
+.sidebar-collapsed .sidebar-collapse > svg {
+  transform: rotate(0);
+}
+.sidebar-collapsed {
+  padding-inline: 12px;
+}
+.sidebar-collapsed .sidebar-brand {
+  padding-inline: 9px;
+}
+.sidebar-collapsed .workspace-label {
+  width: 38px;
+  padding: 4px;
+  margin-inline: 9px;
+  border-color: transparent;
+  background: none;
+}
+.sidebar-collapsed .workspace-label > span:last-child {
+  display: none;
+}
+.sidebar-collapsed .workspace-monogram {
+  flex-shrink: 0;
+}
+.sidebar-collapsed .sidebar-link {
+  justify-content: center;
+  padding-inline: 12px;
+}
+.sidebar-collapsed .sidebar-link > span,
+.sidebar-collapsed .sidebar-link > small {
+  display: none;
+}
+.sidebar-collapsed .sidebar-label {
+  overflow: hidden;
+  white-space: nowrap;
+  color: transparent;
+  padding-inline: 0;
+}
+.sidebar-collapsed .sidebar-footer {
+  visibility: hidden;
+}
+.sidebar-collapsed .sidebar-signature {
+  padding-inline: 0;
+  justify-content: center;
+}
+.sidebar-collapsed .sidebar-signature > span:last-child {
+  display: none;
+}
+.sidebar-collapsed .sidebar-signature > span:first-child {
+  font-size: 8px;
+  white-space: nowrap;
 }
 .sidebar-label {
   padding: 0 12px;
@@ -168,16 +323,6 @@ const formats = computed(() => [
 .sidebar-link.active {
   background: #373a42;
   color: white;
-}
-.sidebar-link.active::before {
-  content: '';
-  position: absolute;
-  width: 3px;
-  top: 14px;
-  bottom: 14px;
-  left: 0;
-  border-radius: 2px;
-  background: #ff3540;
 }
 .sidebar-link.active > svg {
   color: #ff6b73;

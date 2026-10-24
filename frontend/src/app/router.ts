@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { restoreSession, session } from '../services/api'
+import { localPreview } from './local-preview'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,6 +20,7 @@ export const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  if (localPreview) return to.name === 'login' ? { name: 'home' } : undefined
   await restoreSession()
   if (!session.value && to.name !== 'login') return { name: 'login', query: { next: to.fullPath } }
   if (session.value && to.name === 'login') return { name: 'catalog' }

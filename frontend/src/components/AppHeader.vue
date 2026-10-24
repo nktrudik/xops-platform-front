@@ -2,11 +2,12 @@
 import { computed, shallowRef, useTemplateRef } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { logout, session } from '../services/api'
+import { localPreview } from '../app/local-preview'
 import { usePlatform } from '../app/context'
 import AppBrand from './AppBrand.vue'
 import AppIcon from './AppIcon.vue'
 import PlatformGuide from './PlatformGuide.vue'
-defineEmits<{ openNavigation: [] }>()
+defineEmits<{ openNavigation: []; openCommand: [] }>()
 const route = useRoute()
 const { copilots } = usePlatform()
 const error = shallowRef('')
@@ -50,8 +51,8 @@ function leaveAccount(event: FocusEvent): void {
 }
 </script>
 <template>
-  <header class="app-header" :class="{ 'guest-header': !session }">
-    <template v-if="session">
+  <header class="app-header" :class="{ 'guest-header': !session && !localPreview }">
+    <template v-if="session || localPreview">
       <button
         class="icon-button navigation-toggle"
         aria-label="Открыть меню"
@@ -66,10 +67,18 @@ function leaveAccount(event: FocusEvent): void {
         >XOps<span>Platform</span></RouterLink
       >
       <div class="header-actions">
+        <button
+          class="command-trigger"
+          aria-label="Открыть быстрый поиск"
+          @click="$emit('openCommand')"
+        >
+          <AppIcon name="search" /><span>Быстрый поиск</span><kbd>Ctrl K</kbd>
+        </button>
         <button class="header-help" aria-label="О платформе" @click="guideOpen = true">
           <AppIcon name="info" /><span>О платформе</span>
         </button>
         <div
+          v-if="session"
           class="account-control"
           @keydown.esc.prevent.stop="closeAccount"
           @focusout="leaveAccount"
@@ -96,6 +105,7 @@ function leaveAccount(event: FocusEvent): void {
             <p v-if="error" role="alert">{{ error }}</p>
           </div>
         </div>
+        <span v-else class="guest-description">Локальный просмотр</span>
       </div>
       <PlatformGuide v-model="guideOpen" />
     </template>
@@ -141,8 +151,66 @@ function leaveAccount(event: FocusEvent): void {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   flex-shrink: 0;
+}
+.command-trigger {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: 1px solid #e1e4e9;
+  border-radius: 6px;
+  background: #f7f8fa;
+  color: #6d7380;
+  font-size: 10px;
+  transition:
+    border-color 160ms,
+    background 160ms,
+    transform 150ms;
+}
+.command-trigger > svg {
+  width: 14px;
+  height: 14px;
+}
+.command-trigger kbd {
+  font: 400 8px var(--font-body);
+  padding: 3px 5px;
+  background: white;
+  border: 1px solid #dce0e6;
+  border-radius: 3px;
+}
+.command-trigger:hover {
+  border-color: #d0a9af;
+  background: #fff;
+  color: var(--red);
+}
+.command-trigger:active {
+  transform: scale(0.97);
+}
+@media (max-width: 1200px) {
+  .command-trigger > span {
+    display: none;
+  }
+}
+@media (max-width: 800px) {
+  .command-trigger {
+    border: 0;
+    background: none;
+    padding: 9px;
+  }
+  .command-trigger > svg {
+    width: 17px;
+    height: 17px;
+  }
+  .command-trigger kbd {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  .mobile-product > span {
+    display: none;
+  }
 }
 .header-help {
   display: flex;

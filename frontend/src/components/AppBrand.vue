@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+defineProps<{ compact?: boolean }>()
 </script>
 <template>
   <RouterLink class="app-brand" to="/" aria-label="XOps Platform — главная">
     <span class="app-brand-mark" aria-hidden="true"
       ><span>М</span><span>Т</span><span>С</span></span
     >
-    <span class="app-brand-name" translate="no">XOps<span>Platform</span></span>
+    <span v-if="!compact" class="app-brand-name" translate="no">XOps<span>Platform</span></span>
   </RouterLink>
 </template>
 <style scoped>

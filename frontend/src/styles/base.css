@@ -3,6 +3,7 @@
 }
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 92px;
 }
 body {
   margin: 0;
@@ -231,6 +232,7 @@ select {
   gap: 12px;
   padding: 18px 22px;
   border-bottom: 1px solid var(--border);
+  background: #fafafb;
 }
 .panel-title {
   display: inline-flex;
@@ -242,7 +244,7 @@ select {
 .panel-title svg {
   width: 18px;
   height: 18px;
-  color: var(--text-secondary);
+  color: var(--red);
 }
 .sr-only {
   position: absolute;
@@ -289,6 +291,9 @@ select {
   *::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
   }
 }
