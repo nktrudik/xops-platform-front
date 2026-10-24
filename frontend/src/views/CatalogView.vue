@@ -1,70 +1,115 @@
-<script setup lang="ts">
-import { computed, ref } from 'vue'
+﻿<script setup lang="ts">
 import { usePlatform } from '../app/context'
-import { searchCopilots } from '../domain/copilot'
+import { useCatalogControls } from '../composables/use-catalog-controls'
+import type { CatalogFormat } from '../composables/use-catalog-controls'
+import WorkspaceOverview from '../components/WorkspaceOverview.vue'
+import CatalogSkeleton from '../components/CatalogSkeleton.vue'
 import AppIcon from '../components/AppIcon.vue'
 import CopilotCard from '../components/CopilotCard.vue'
 import StatePanel from '../components/StatePanel.vue'
 import CatalogNotice from '../components/CatalogNotice.vue'
-
+defineProps<{ overview?: boolean }>()
 const { copilots, loading, error, hasLoaded, loadCatalog } = usePlatform()
-const query = ref('')
-const results = computed(() => searchCopilots(copilots.value, query.value))
-
+const { query, format, availableOnly, listView, counts, results, reset } =
+  useCatalogControls(copilots)
+const formats: { id: CatalogFormat; label: string }[] = [
+  { id: 'all', label: 'Все Copilot' },
+  { id: 'chat', label: 'Чат' },
+  { id: 'embedded', label: 'Встроенный UI' },
+  { id: 'external', label: 'Внешние продукты' },
+]
 function focusResults(): void {
   document.getElementById('catalog-title')?.focus({ preventScroll: true })
-  document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 </script>
-
 <template>
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="hero-eyebrow"><span class="eyebrow-dot" /> Единое пространство AI Copilot</div>
-    <h1 id="hero-title">
-      Помощники для ваших<br class="desktop-break" />
-      рабочих задач
-    </h1>
-    <p class="hero-description">
-      Находите нужный Copilot и работайте с ним в одном пространстве.<br class="desktop-break" />
-      От первого вопроса до готового решения.
-    </p>
-    <form class="search-form" role="search" @submit.prevent="focusResults">
-      <div class="search-input-wrap">
-        <AppIcon name="search" />
-        <label class="sr-only" for="copilot-search">Поиск Copilot</label>
-        <input
+  <WorkspaceOverview v-if="overview" />
+  <section
+    id="catalog"
+    class="catalog-section"
+    :class="{ 'catalog-overview': overview }"
+    aria-labelledby="catalog-title"
+  >
+    <div class="catalog-heading">
+      <div>
+        <span v-if="!overview" class="section-eyebrow">Инструменты команд МТС</span
+        ><component :is="overview ? 'h2' : 'h1'" id="catalog-title" tabindex="-1">{{
+          overview ? 'Ваши AI-помощники' : 'Каталог Copilot'
+        }}</component>
+        <p>
+          {{
+            overview
+              ? 'Выберите инструмент под свою задачу.'
+              : 'Все помощники платформы — в одном рабочем пространстве.'
+          }}
+        </p>
+      </div>
+      <button
+        class="catalog-refresh"
+        aria-label="Обновить каталог"
+        :disabled="loading"
+        @click="loadCatalog"
+      >
+        <AppIcon name="refresh" /><span>Обновить каталог</span>
+      </button>
+    </div>
+    <div class="catalog-toolbar">
+      <form class="catalog-search" role="search" @submit.prevent="focusResults">
+        <AppIcon name="search" /><label class="sr-only" for="copilot-search">Поиск Copilot</label
+        ><input
           id="copilot-search"
           v-model="query"
+          name="q"
           type="search"
           autocomplete="off"
-          placeholder="Название Copilot или ваша задача"
-        />
-        <button
+          placeholder="Найти Copilot или описать задачу…"
+        /><button
           v-if="query"
-          class="icon-button search-clear"
+          class="icon-button"
           type="button"
           aria-label="Очистить поиск"
           @click="query = ''"
         >
-          <AppIcon name="close" />
+          <AppIcon name="close" /></button
+        ><kbd v-if="!query" aria-hidden="true">Поиск</kbd>
+      </form>
+      <label class="catalog-availability"
+        ><input v-model="availableOnly" type="checkbox" /><span>Только доступные</span></label
+      >
+      <div class="catalog-view" role="group" aria-label="Вид каталога">
+        <button
+          class="icon-button"
+          :aria-pressed="!listView"
+          aria-label="Показать карточками"
+          @click="listView = false"
+        >
+          <AppIcon name="grid" /></button
+        ><button
+          class="icon-button"
+          :aria-pressed="listView"
+          aria-label="Показать списком"
+          @click="listView = true"
+        >
+          <AppIcon name="list" />
         </button>
       </div>
-      <button class="button button-primary" type="submit">Найти<AppIcon name="arrow" /></button>
-    </form>
-    <span class="hero-watermark" aria-hidden="true">X</span>
-  </section>
-
-  <section id="catalog" class="catalog-section" aria-labelledby="catalog-title">
-    <div class="section-heading">
-      <div>
-        <span class="section-eyebrow">Инструменты платформы</span>
-        <h2 id="catalog-title" tabindex="-1">Каталог Copilot</h2>
-      </div>
-      <span v-if="!loading && !error" class="catalog-count" aria-live="polite">{{
-        query ? `Найдено: ${results.length}` : `${copilots.length} Copilot`
-      }}</span>
     </div>
-    <StatePanel v-if="loading" title="Загружаем каталог" loading />
+    <div class="catalog-filter-bar">
+      <div class="catalog-formats" role="group" aria-label="Формат взаимодействия">
+        <button
+          v-for="item in formats"
+          :key="item.id"
+          :aria-pressed="format === item.id"
+          @click="format = item.id"
+        >
+          {{ item.label }}<span v-if="hasLoaded">{{ counts[item.id] }}</span>
+        </button>
+      </div>
+      <span v-if="hasLoaded" class="catalog-result-count" aria-live="polite"
+        >{{ results.length }} из {{ copilots.length }}</span
+      >
+    </div>
+    <CatalogSkeleton v-if="loading" />
     <StatePanel v-else-if="error && !hasLoaded" title="Каталог недоступен" :description="error"
       ><button class="button button-primary" @click="loadCatalog">
         Повторить попытку
@@ -78,197 +123,351 @@ function focusResults(): void {
     <StatePanel
       v-else-if="!results.length"
       title="Ничего не найдено"
-      description="Попробуйте другое название или опишите задачу короче."
-      ><button class="button button-secondary" @click="query = ''">
-        Очистить поиск
-      </button></StatePanel
+      description="Попробуйте другое название, формат или отключите фильтр доступности."
+      ><button class="button button-secondary" @click="reset">Очистить поиск</button></StatePanel
     >
-    <div v-else class="catalog-grid">
+    <div
+      v-else
+      class="catalog-grid"
+      :class="{ 'catalog-list': listView, 'catalog-large': results.length > 50 }"
+    >
       <CopilotCard v-for="copilot in results" :key="copilot.id" :copilot="copilot" />
     </div>
     <CatalogNotice />
+    <div class="catalog-note">
+      <AppIcon name="info" />
+      <p>
+        Каждый Copilot создан для своего круга задач. Формат работы и доступность указаны в
+        карточке.
+      </p>
+    </div>
   </section>
 </template>
-
 <style scoped>
-.hero {
-  position: relative;
-  overflow: hidden;
-  margin-top: 40px;
-  padding: 52px 56px 48px;
-  border-radius: 32px;
-  background: linear-gradient(
-    115deg,
-    color-mix(in srgb, #913f98 10%, white),
-    color-mix(in srgb, #0082c8 12%, white)
-  );
+.catalog-section {
+  scroll-margin-top: 100px;
 }
-.hero-eyebrow {
+.catalog-heading {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 9px;
-  position: relative;
-  z-index: 1;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.catalog-heading h1,
+.catalog-heading h2 {
+  font-size: 25px;
+  margin: 10px 0;
+  letter-spacing: -0.7px;
+  line-height: 1.4;
+}
+.catalog-overview .catalog-heading h2 {
+  font-size: 22px;
+  margin-top: 0;
+}
+.catalog-heading p {
   color: var(--text-secondary);
-  font-size: 14px;
-}
-.eyebrow-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--red);
-}
-h1 {
-  position: relative;
-  z-index: 1;
-  margin: 22px 0 18px;
-  max-width: 1000px;
-  font-size: clamp(30px, 3.3vw, 48px);
-  line-height: 1.2;
-  letter-spacing: -1.3px;
-}
-.hero-description {
-  position: relative;
-  z-index: 1;
-  color: var(--text-secondary);
+  font-size: 13px;
   margin: 0;
-  font-size: 18px;
   line-height: 1.6;
 }
-.hero-watermark {
-  position: absolute;
-  right: 46px;
-  top: -52px;
-  font-family: var(--font-heading);
-  font-size: 390px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: rgb(255 255 255 / 35%);
-  pointer-events: none;
-  transform: rotate(-9deg);
-}
-.search-form {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 12px;
-  max-width: 1100px;
-  margin-top: 32px;
-}
-.search-input-wrap {
+.catalog-refresh {
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex: 1;
+  gap: 8px;
+  padding: 10px 0 10px 10px;
+  background: none;
+  border: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.catalog-refresh svg {
+  width: 15px;
+  height: 15px;
+}
+.catalog-refresh:hover {
+  color: var(--red);
+}
+.catalog-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
   background: white;
-  border-radius: 14px;
-  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
+}
+.catalog-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f7f8fa;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 12px;
+  flex: 1;
   min-width: 0;
-  border: 1px solid transparent;
 }
-.search-input-wrap:focus-within {
-  border-color: var(--text-secondary);
+.catalog-search:focus-within {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-soft);
 }
-.search-input-wrap > svg {
+.catalog-search > svg {
+  color: var(--muted);
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
+}
+.catalog-search input {
+  height: 42px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  color: var(--text);
+}
+.catalog-search input:focus-visible {
+  outline: none;
+}
+.catalog-search input::placeholder {
   color: var(--text-secondary);
 }
-input {
-  height: 58px;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  font-size: 16px;
-  outline: none;
-  padding: 0;
-  min-width: 0;
-}
-input::-webkit-search-cancel-button {
+.catalog-search input::-webkit-search-cancel-button {
   display: none;
 }
-.search-form .button {
-  min-width: 150px;
+.catalog-search .icon-button {
+  padding: 4px;
+  height: 28px;
+  width: 28px;
 }
-.catalog-section {
-  margin-top: 52px;
-  scroll-margin-top: 110px;
+.catalog-search .icon-button svg {
+  width: 16px;
+  height: 16px;
 }
-.section-heading {
+.catalog-search kbd {
+  font: 400 9px var(--font-body);
+  color: var(--muted);
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+.catalog-availability {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.catalog-availability input {
+  appearance: auto;
+  accent-color: var(--red);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+.catalog-view {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+.catalog-view button {
+  height: 32px;
+  width: 32px;
+  padding: 7px;
+  border-radius: 4px;
+}
+.catalog-view button svg {
+  width: 16px;
+  height: 16px;
+}
+.catalog-view button[aria-pressed='true'] {
+  background: #edf0f3;
+  color: var(--text);
+}
+.catalog-filter-bar {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 26px;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-top: 0;
+  padding: 0 16px;
+  margin-bottom: 20px;
+  background: white;
+  border-radius: 0 0 10px 10px;
 }
-.section-eyebrow {
+.catalog-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+.catalog-formats button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 48px;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 11px;
+  transition:
+    color 160ms,
+    border-color 160ms;
 }
-h2 {
-  font-size: clamp(25px, 2.5vw, 34px);
-  margin: 8px 0 0;
-  letter-spacing: -0.6px;
+.catalog-formats button > span {
+  font-size: 9px;
+  color: #686e78;
+  background: #f1f3f5;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
 }
-.catalog-count {
+.catalog-formats button:hover {
+  color: var(--red);
+}
+.catalog-formats button[aria-pressed='true'] {
+  color: var(--red);
+  border-bottom-color: var(--red);
+}
+.catalog-formats button[aria-pressed='true'] > span {
+  color: var(--red);
+  background: var(--red-soft);
+}
+.catalog-result-count {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--text-secondary);
-  background: var(--border);
-  padding: 8px 14px;
-  border-radius: 30px;
-  font-size: 13px;
 }
 .catalog-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 16px;
 }
-@media (max-width: 1100px) {
+.catalog-list {
+  grid-template-columns: 1fr;
+}
+.catalog-large > :deep(.copilot-card) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 258px;
+}
+.catalog-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 20px;
+  margin-top: 4px;
+  color: var(--text-secondary);
+}
+.catalog-note svg {
+  height: 14px;
+  width: 14px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.catalog-note p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+@media (max-width: 1250px) {
   .catalog-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .hero {
-    padding: 40px;
+  .catalog-grid.catalog-list {
+    grid-template-columns: 1fr;
   }
-  .hero-watermark {
-    right: -60px;
-  }
-}
-@media (max-width: 640px) {
-  .hero {
-    margin-top: 24px;
-    padding: 28px 22px;
-    border-radius: 24px;
-  }
-  .hero-description {
-    font-size: 16px;
-  }
-  .desktop-break {
+  .catalog-search kbd {
     display: none;
   }
-  h1 {
-    letter-spacing: -0.8px;
+  .catalog-toolbar {
+    gap: 14px;
   }
-  .search-form {
+  .catalog-formats {
+    gap: 16px;
+  }
+}
+@media (max-width: 600px) {
+  .catalog-heading {
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .catalog-heading h1 {
+    font-size: 23px;
+  }
+  .catalog-overview .catalog-heading h2 {
+    font-size: 21px;
+  }
+  .catalog-refresh {
+    padding-top: 5px;
+  }
+  .catalog-refresh > span {
+    display: none;
+  }
+  .catalog-refresh svg {
+    width: 18px;
+    height: 18px;
+  }
+  .catalog-refresh {
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: white;
+  }
+  .catalog-toolbar {
+    flex-wrap: wrap;
+    padding: 12px;
+    gap: 14px;
+  }
+  .catalog-search {
+    flex-basis: 100%;
+  }
+  .catalog-search input {
+    font-size: 12px;
+  }
+  .catalog-availability {
+    font-size: 11px;
+    min-height: 32px;
+  }
+  .catalog-view {
+    margin-left: auto;
+  }
+  .catalog-filter-bar {
     flex-direction: column;
-    margin-top: 24px;
+    align-items: stretch;
+    gap: 0;
+    padding: 0 12px;
   }
-  .search-form .button {
-    min-height: 50px;
+  .catalog-formats {
+    gap: 18px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
   }
-  .catalog-section {
-    margin-top: 36px;
+  .catalog-formats button {
+    white-space: nowrap;
+    min-height: 48px;
+    font-size: 10px;
+  }
+  .catalog-result-count {
+    padding: 4px 0 12px;
   }
   .catalog-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
   }
-  .section-heading {
-    align-items: center;
-  }
-  .hero-watermark {
-    font-size: 260px;
-    right: -70px;
-    top: 20px;
+  .catalog-note p {
+    font-size: 10px;
   }
 }
 </style>
