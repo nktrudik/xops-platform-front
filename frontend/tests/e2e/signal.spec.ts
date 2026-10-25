@@ -208,7 +208,7 @@ test('Signal: 0, 1, 6, 30 Copilot и reduced motion', async ({ page }, testInfo)
     await page.goto('/')
     await expect(page.locator('.copilot-card')).toHaveCount(count)
     await expect(page.locator('.signal-node')).toHaveCount(
-      Math.min(6, items.filter((item) => item.status === 'available').length),
+      Math.min(5, items.filter((item) => item.status === 'available').length),
     )
     if (!count)
       await expect(page.getByRole('heading', { name: 'В каталоге пока нет Copilot' })).toBeVisible()

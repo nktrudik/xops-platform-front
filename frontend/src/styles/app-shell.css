@@ -91,6 +91,7 @@
 @media (max-width: 800px) {
   .application-signed-in {
     padding-left: 0;
+    transition: none;
   }
   .application-collapsed.application-signed-in {
     padding-left: 0;

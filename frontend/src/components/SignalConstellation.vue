@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { SignalNode } from './signal-layout'
 import AppIcon from './AppIcon.vue'
@@ -15,6 +15,21 @@ const props = defineProps<{
 const emit = defineEmits<{ inspect: [id: string]; toggleMotion: [] }>()
 const map = useTemplateRef<HTMLElement>('map')
 const active = computed(() => props.nodes.find((node) => node.copilot.id === props.activeId))
+watch(
+  () => props.nodes,
+  async (nodes) => {
+    const focused = document.activeElement
+    if (
+      !(focused instanceof HTMLAnchorElement) ||
+      !map.value?.contains(focused) ||
+      !focused.classList.contains('signal-node')
+    )
+      return
+    if (nodes.some((node) => node.copilot.id === focused.dataset.copilotId)) return
+    await nextTick()
+    map.value?.focus({ preventScroll: true })
+  },
+)
 async function onKeydown(event: KeyboardEvent): Promise<void> {
   if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
   if (!(event.target instanceof Element) || !event.target.closest('.signal-node')) return
@@ -34,6 +49,7 @@ async function onKeydown(event: KeyboardEvent): Promise<void> {
 <template>
   <nav
     ref="map"
+    tabindex="-1"
     class="signal-map"
     :class="{ 'has-active': active, 'signal-searching': searching, 'motion-paused': motionPaused }"
     aria-label="Copilot в пространстве Signal"
@@ -119,6 +135,7 @@ async function onKeydown(event: KeyboardEvent): Promise<void> {
       v-for="(node, index) in nodes"
       :key="node.copilot.id"
       class="signal-node"
+      :data-copilot-id="node.copilot.id"
       :class="{
         'node-top': index === 0,
         'node-active': activeId === node.copilot.id,
@@ -145,8 +162,8 @@ async function onKeydown(event: KeyboardEvent): Promise<void> {
       loading
         ? 'Загружаем инструменты…'
         : searching
-          ? 'Попробуйте другой поисковый запрос'
-          : 'Пространство открыто для новых Copilot'
+          ? 'Нет доступных Copilot по этому запросу'
+          : 'Пока нет доступных Copilot'
     }}</span>
   </nav>
 </template>

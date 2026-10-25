@@ -3,7 +3,6 @@ import { RouterView } from 'vue-router'
 import { watch, onBeforeUnmount, onMounted, shallowRef } from 'vue'
 import { router } from './app/router'
 import { session } from './services/api'
-import { localPreview } from './app/local-preview'
 import { usePlatform } from './app/context'
 import AppHeader from './components/AppHeader.vue'
 import AppSidebar from './components/AppSidebar.vue'
@@ -15,11 +14,7 @@ const commandOpen = shallowRef(false)
 const sidebarCollapsed = shallowRef(false)
 function onShortcut(event: KeyboardEvent): void {
   if (event.repeat || event.isComposing) return
-  if (
-    (event.ctrlKey || event.metaKey) &&
-    event.key.toLowerCase() === 'k' &&
-    (session.value || localPreview)
-  ) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && session.value) {
     event.preventDefault()
     navigationOpen.value = false
     commandOpen.value = !commandOpen.value
@@ -37,7 +32,7 @@ const { startCatalogPolling, stopCatalogPolling, clearCatalog } = usePlatform()
 watch(
   session,
   (user) => {
-    if (user || localPreview) startCatalogPolling()
+    if (user) startCatalogPolling()
     else {
       commandOpen.value = false
       navigationOpen.value = false
@@ -57,12 +52,12 @@ onBeforeUnmount(stopCatalogPolling)
   <div
     class="application"
     :class="{
-      'application-signed-in': session || localPreview,
+      'application-signed-in': session,
       'application-collapsed': sidebarCollapsed,
     }"
   >
     <AppSidebar
-      v-if="session || localPreview"
+      v-if="session"
       class="desktop-sidebar"
       :collapsed="sidebarCollapsed"
       @toggle="sidebarCollapsed = !sidebarCollapsed"
@@ -83,7 +78,7 @@ onBeforeUnmount(stopCatalogPolling)
         <span translate="no">XOps Platform</span><span>AI-инструменты команд МТС</span>
       </footer>
     </div>
-    <MobileNavigation v-if="session || localPreview" v-model="navigationOpen" />
-    <CommandPalette v-if="session || localPreview" v-model="commandOpen" />
+    <MobileNavigation v-if="session" v-model="navigationOpen" />
+    <CommandPalette v-if="session" v-model="commandOpen" />
   </div>
 </template>

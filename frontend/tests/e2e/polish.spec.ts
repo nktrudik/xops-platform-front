@@ -137,7 +137,7 @@ test('Polish: 0, 1, 6, 36 Copilot, поиск вне первого экрана
     await page.route('**/api/copilots', (route) => route.fulfill({ json: items }))
     await page.goto('/')
     await expect(page.locator('.copilot-card')).toHaveCount(count)
-    await expect(page.locator('.signal-node')).toHaveCount(Math.min(6, count))
+    await expect(page.locator('.signal-node')).toHaveCount(Math.min(5, count))
     await page.evaluate(() => document.fonts.ready)
     await expect(page.locator('.catalog-workspace')).toHaveCSS('transform', 'none')
     await geometry(page)

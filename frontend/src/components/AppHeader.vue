@@ -2,7 +2,6 @@
 import { computed, shallowRef, useTemplateRef } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { logout, session } from '../services/api'
-import { localPreview } from '../app/local-preview'
 import { usePlatform } from '../app/context'
 import AppBrand from './AppBrand.vue'
 import AppIcon from './AppIcon.vue'
@@ -51,8 +50,8 @@ function leaveAccount(event: FocusEvent): void {
 }
 </script>
 <template>
-  <header class="app-header" :class="{ 'guest-header': !session && !localPreview }">
-    <template v-if="session || localPreview">
+  <header class="app-header" :class="{ 'guest-header': !session }">
+    <template v-if="session">
       <button
         class="icon-button navigation-toggle"
         aria-label="Открыть меню"
@@ -78,7 +77,6 @@ function leaveAccount(event: FocusEvent): void {
           <AppIcon name="info" /><span>О платформе</span>
         </button>
         <div
-          v-if="session"
           class="account-control"
           @keydown.esc.prevent.stop="closeAccount"
           @focusout="leaveAccount"
@@ -105,7 +103,6 @@ function leaveAccount(event: FocusEvent): void {
             <p v-if="error" role="alert">{{ error }}</p>
           </div>
         </div>
-        <span v-else class="guest-description">Локальный просмотр</span>
       </div>
       <PlatformGuide v-model="guideOpen" />
     </template>

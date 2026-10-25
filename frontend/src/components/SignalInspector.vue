@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { RouterLink } from 'vue-router'
-import { interfaceLabels, type Copilot } from '../domain/copilot'
+import { interfaceLabels, statusLabels, type Copilot } from '../domain/copilot'
 import AppIcon from './AppIcon.vue'
 
-defineProps<{
+const props = defineProps<{
   copilot?: Copilot
   position: number
   total: number
@@ -12,6 +12,9 @@ defineProps<{
   loading: boolean
   searching: boolean
 }>()
+const canOpen = computed(
+  () => props.copilot?.status === 'available' || props.copilot?.status === 'configuration-error',
+)
 const emit = defineEmits<{ previous: []; next: []; clear: [] }>()
 const nextButton = useTemplateRef<HTMLButtonElement>('nextButton')
 function clear(): void {
@@ -51,17 +54,21 @@ function restore(element: Element): void {
           <b class="inspector-title" :title="copilot.name">{{ copilot.name }}</b>
           <div class="inspector-description" tabindex="0" :aria-label="`Описание ${copilot.name}`">
             <span class="inspector-format">{{
-              copilot.interfaceType ? interfaceLabels[copilot.interfaceType] : ''
+              `${copilot.status === 'available' ? '' : `${statusLabels[copilot.status]} · `}${copilot.interfaceType ? interfaceLabels[copilot.interfaceType] : 'Интерфейс не настроен'}`
             }}</span>
             <p>{{ copilot.description }}</p>
           </div>
           <RouterLink
+            v-if="canOpen"
             class="inspector-open"
             :to="{ name: 'copilot', params: { id: copilot.id } }"
             :aria-label="`Открыть выбранный Copilot: ${copilot.name}`"
             ><span>Открыть <span class="inspector-open-word">Copilot</span></span
             ><AppIcon name="arrow"
           /></RouterLink>
+          <span v-else class="inspector-unavailable" role="status"
+            ><AppIcon name="info" />{{ statusLabels[copilot.status] }}</span
+          >
         </div>
         <div v-else key="idle" class="inspector-placeholder">
           <b class="inspector-title">{{
@@ -260,6 +267,21 @@ function restore(element: Element): void {
   line-height: 1.5;
   color: #c9c9d3;
 }
+.inspector-unavailable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #62636d;
+  border-radius: 7px;
+  color: #d0d0da;
+  font-size: 11px;
+}
+.inspector-unavailable > svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
 .inspector-hint > svg {
   width: 18px;
   height: 18px;
@@ -360,7 +382,8 @@ function restore(element: Element): void {
     font-size: 11px;
   }
   .inspector-open,
-  .inspector-hint {
+  .inspector-hint,
+  .inspector-unavailable {
     grid-column: 1;
     grid-row: 2;
   }

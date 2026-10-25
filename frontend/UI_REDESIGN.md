@@ -23,9 +23,7 @@
 npm.cmd exec vite -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-Открыть `http://127.0.0.1:5173/`. Vite запускает только frontend. Для локального просмотра оболочки без экрана входа задайте `VITE_AUTH_DISABLED=true` в игнорируемом `frontend/.env.local` и перезапустите Vite. Это действует только при `import.meta.env.DEV`; production всегда требует вход. Для возврата обычного режима удалите флаг или задайте `false`.
-
-В локальном режиме этот флаг включает тестовые Copilot и чат в памяти браузера из `src/preview/services.ts`. Backend и модель не вызываются; перезагрузка очищает тестовые диалоги. Embedded-приложения не подключаются. Для возврата к реальному API выключите флаг. Условный динамический импорт исключает весь preview-модуль из production-сборки, где всегда действуют реальные API и авторизация.
+Открыть `http://127.0.0.1:5173/`. Vite запускает только frontend; для входа, каталога, чата и истории требуется существующий same-origin API платформы, как в `dev`. Отдельного тестового режима приложения и обхода входа нет. Неуспешный запрос не заменяется статическими данными.
 
 Для локальной оценки шрифтов dev-плагин `local-fonts.ts` читает имеющиеся файлы из `../mts_shrift/ШРИФТ/Web`. Плагин работает только при `serve`: шрифты и гайды не копируются в `public`, `dist` или Git. В production сохранён существующий механизм загрузки `/brand-fonts/`.
 
@@ -34,12 +32,12 @@ npm.cmd exec vite -- --host 127.0.0.1 --port 5173 --strictPort
 ```powershell
 npm.cmd run check
 npm.cmd run build
-npm.cmd exec playwright test -- --config playwright.redesign.config.ts
+npm.cmd exec playwright -- test --config playwright.signal.config.ts
 ```
 
 Браузерная конфигурация запускает реальный frontend в установленном Chrome на 1440×900 и Pixel 7. Существующие сценарии каталога, polling, ошибок и Embedded UI сохранены. Добавлены вход/выход, справка, мобильное меню, фильтры с перезагрузкой, переходы из каталога в чат и Embedded UI, восстановление и удаление диалога, пустой и большой каталог.
 
-HTTP-фикстуры подключаются исключительно из Playwright через `page.route`: это проверка frontend по существующему контракту, а не проверка доступности живых удалённых Copilot. Production-маршруты всегда получают данные через `createCatalogRepository` и `createChatGateway`; локальный preview включается отдельно, как описано выше.
+HTTP-фикстуры подключаются исключительно из Playwright через `page.route`, как в тестах `dev`: это проверка frontend по существующему контракту, а не проверка доступности живых удалённых Copilot. Приложение всегда получает данные через `createCatalogRepository` и `createChatGateway`.
 
 Скриншоты: `../.artifacts/ui-redesign-v2/` — `home`, `catalog`, `chat`, `embedded`, `login` для desktop/mobile и `navigation-mobile.png`. Просмотрены реальные снимки, исправлены перекрытие мобильной навигацией и фокус, затем сценарии прогнаны повторно.
 

@@ -27,5 +27,3 @@ MTS_Guide_02_removed.pdf
 **/*.otf
 **/*.eot
 .DS_STORE
-skills
-skills-lock.json
