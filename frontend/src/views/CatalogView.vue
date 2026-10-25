@@ -34,9 +34,8 @@ function focusResults(): void {
     <section id="catalog" class="catalog-section" aria-labelledby="catalog-title">
       <div class="catalog-heading">
         <div>
-          <span class="section-eyebrow catalog-eyebrow">Инструменты платформы</span>
           <h2 id="catalog-title" tabindex="-1">
-            Выберите свою точку усиления<span v-if="hasLoaded" class="catalog-total">{{
+            Инструменты для ваших задач<span v-if="hasLoaded" class="catalog-total">{{
               copilots.length
             }}</span>
           </h2>
@@ -126,7 +125,7 @@ function focusResults(): void {
 </template>
 <style scoped>
 .catalog-section {
-  margin-top: 26px;
+  margin-top: 24px;
   scroll-margin-top: 100px;
 }
 .catalog-heading {
@@ -134,34 +133,30 @@ function focusResults(): void {
   justify-content: space-between;
   align-items: center;
   gap: 24px;
-  margin-bottom: 18px;
-}
-.catalog-eyebrow {
-  font-size: 8px;
-  letter-spacing: 1.7px;
-  color: #737884;
+  margin-bottom: 16px;
+  animation: catalog-section-arrive 450ms 70ms var(--ease-out) backwards;
 }
 .catalog-heading h2 {
   font-size: 23px;
   font-weight: 500;
   line-height: 1.4;
   letter-spacing: -0.6px;
-  margin: 7px 0;
+  margin: 0 0 6px;
 }
 .catalog-total {
   display: inline-block;
   vertical-align: middle;
   margin-left: 12px;
-  padding: 3px 7px;
-  font: 500 10px/1.2 var(--font-body);
-  color: var(--red);
-  background: #fce4e6;
+  padding: 4px 7px;
+  font: 500 12px/1.2 var(--font-body);
+  color: white;
+  background: var(--red);
   border-radius: 4px;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 .catalog-heading p {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.6;
@@ -170,12 +165,13 @@ function focusResults(): void {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px;
+  min-height: 40px;
+  padding: 10px 12px;
   background: white;
-  color: #5c626d;
+  color: #3e4552;
   border: 1px solid var(--border);
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   transition:
     border-color 180ms,
@@ -203,9 +199,10 @@ function focusResults(): void {
   align-items: center;
   gap: 20px;
   padding: 10px;
-  background: #eceef2;
-  border: 1px solid #e1e4e9;
+  background: #e9ecf1;
+  border: 1px solid #d4d9e2;
   border-radius: 10px;
+  animation: catalog-section-arrive 450ms 120ms var(--ease-out) backwards;
 }
 .catalog-formats {
   display: flex;
@@ -216,13 +213,13 @@ function focusResults(): void {
   display: flex;
   align-items: center;
   gap: 7px;
-  min-height: 36px;
+  min-height: 38px;
   padding: 8px 12px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: none;
   color: #555c68;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   transition:
     background 180ms,
@@ -235,7 +232,7 @@ function focusResults(): void {
   place-items: center;
   min-width: 16px;
   padding: 2px 4px;
-  font-size: 8px;
+  font-size: 10px;
   border-radius: 3px;
   color: #656c78;
   background: #dfe3e9;
@@ -249,14 +246,14 @@ function focusResults(): void {
   transform: scale(0.96);
 }
 .catalog-formats button[aria-pressed='true'] {
-  background: #fff;
-  border-color: #e0e3e8;
-  color: #22252c;
-  box-shadow: 0 2px 4px rgb(20 24 32 / 5%);
+  background: var(--graphite);
+  border-color: var(--graphite);
+  color: #fff;
+  box-shadow: 0 2px 5px rgb(20 24 32 / 12%);
 }
 .catalog-formats button[aria-pressed='true'] > span {
-  color: var(--red);
-  background: #fce5e7;
+  color: white;
+  background: var(--red);
 }
 .catalog-controls-right {
   display: flex;
@@ -267,7 +264,7 @@ function focusResults(): void {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
   cursor: pointer;
   color: #555c68;
@@ -275,8 +272,8 @@ function focusResults(): void {
 .catalog-availability input {
   appearance: auto;
   accent-color: var(--red);
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
   margin: 0;
 }
 .catalog-view {
@@ -286,9 +283,9 @@ function focusResults(): void {
   gap: 4px;
 }
 .catalog-view .icon-button {
-  width: 30px;
-  height: 30px;
-  padding: 7px;
+  width: 34px;
+  height: 34px;
+  padding: 8px;
   border-radius: 5px;
 }
 .catalog-view .icon-button svg {
@@ -296,8 +293,8 @@ function focusResults(): void {
   height: 16px;
 }
 .catalog-view button[aria-pressed='true'] {
-  background: #dbe0e7;
-  color: var(--text);
+  background: var(--red);
+  color: #fff;
 }
 .catalog-results-meta {
   display: flex;
@@ -305,8 +302,8 @@ function focusResults(): void {
   justify-content: space-between;
   gap: 16px;
   margin: 12px 0;
-  color: #6e7480;
-  font-size: 9px;
+  color: #626a77;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 .catalog-live {
@@ -363,10 +360,10 @@ function focusResults(): void {
   }
   .catalog-formats button {
     padding-inline: 9px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .catalog-availability {
-    font-size: 9px;
+    font-size: 11px;
   }
 }
 @media (max-width: 1050px) and (min-width: 801px) {
@@ -393,18 +390,16 @@ function focusResults(): void {
     font-size: 21px;
     max-width: 260px;
   }
-  .catalog-eyebrow {
-    font-size: 8px;
-  }
   .catalog-heading p {
-    font-size: 11px;
+    font-size: 13px;
     max-width: 270px;
   }
   .catalog-refresh {
-    margin-top: 18px;
+    margin-top: 2px;
     width: 34px;
     height: 34px;
     padding: 9px;
+    min-height: 34px;
   }
   .catalog-refresh span {
     display: none;
@@ -422,8 +417,8 @@ function focusResults(): void {
   }
   .catalog-formats button {
     padding-inline: 9px;
-    font-size: 9px;
-    min-height: 36px;
+    font-size: 11px;
+    min-height: 38px;
   }
   .catalog-controls-right {
     width: 100%;
@@ -432,14 +427,14 @@ function focusResults(): void {
     padding-top: 8px;
   }
   .catalog-availability {
-    font-size: 10px;
+    font-size: 12px;
     min-height: 30px;
   }
   .catalog-results-meta {
-    font-size: 9px;
+    font-size: 11px;
   }
   .catalog-live {
-    font-size: 8px;
+    font-size: 10px;
   }
   .catalog-note {
     padding: 20px;
@@ -453,6 +448,16 @@ function focusResults(): void {
   }
   .catalog-note-mark {
     display: none;
+  }
+}
+@keyframes catalog-section-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

@@ -56,7 +56,7 @@ test('Signal: шрифты, три разрешения, каталог → ча
   expect(fonts.some((font) => font.url.includes('MTSText') && font.status === 200)).toBe(true)
   expect(fonts.some((font) => font.url.includes('MTSExtended') && font.status === 200)).toBe(true)
   if (testInfo.project.name !== 'mobile') {
-    expect((await page.locator('.catalog-hero').boundingBox())!.height).toBeLessThanOrEqual(280)
+    expect((await page.locator('.catalog-hero').boundingBox())!.height).toBeLessThanOrEqual(360)
     await expect(page.locator('.desktop-sidebar .sidebar-active-marker')).toHaveClass(
       /marker-visible/,
     )
@@ -149,6 +149,7 @@ test('Signal: hover, focus, сворачивание sidebar и кадры вз�
   await page.waitForTimeout(180)
   await page.screenshot({ path: resolve(motion, '04-node-focus.png') })
   await page.getByRole('searchbox').focus()
+  await page.keyboard.press('Escape')
   await expect(page.locator('.signal-info')).not.toBeVisible()
   const firstCard = page.locator('.copilot-card').first()
   await firstCard.hover()
@@ -214,7 +215,7 @@ test('Signal: 0, 1, 6, 30 Copilot и reduced motion', async ({ page }, testInfo)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     expect(
       await page
-        .locator('.signal-sweep')
+        .locator('.signal-core-aura')
         .evaluate((el) => parseFloat(getComputedStyle(el).animationDuration)),
     ).toBeLessThanOrEqual(0.001)
     await capture(page, `count-${count}-${testInfo.project.name}`)

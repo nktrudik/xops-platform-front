@@ -128,7 +128,7 @@ function leaveAccount(event: FocusEvent): void {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 12px;
+  font-size: 13px;
   min-width: 0;
 }
 .header-breadcrumb > span {
@@ -162,19 +162,19 @@ function leaveAccount(event: FocusEvent): void {
   border: 1px solid #e1e4e9;
   border-radius: 6px;
   background: #f7f8fa;
-  color: #6d7380;
-  font-size: 10px;
+  color: #535b68;
+  font-size: 12px;
   transition:
     border-color 160ms,
     background 160ms,
     transform 150ms;
 }
 .command-trigger > svg {
-  width: 14px;
-  height: 14px;
+  width: 17px;
+  height: 17px;
 }
 .command-trigger kbd {
-  font: 400 8px var(--font-body);
+  font: 400 10px var(--font-body);
   padding: 3px 5px;
   background: white;
   border: 1px solid #dce0e6;
@@ -270,7 +270,7 @@ function leaveAccount(event: FocusEvent): void {
   text-overflow: ellipsis;
 }
 .account-text small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 .account-trigger > svg {

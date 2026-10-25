@@ -90,6 +90,9 @@ select {
 .button-secondary:hover {
   background: #e5e8ed;
 }
+.button:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
 .icon-button {
   display: inline-flex;
   align-items: center;
@@ -149,7 +152,7 @@ select {
   border-radius: 5px;
   background: #f4f6f8;
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 .status-dot {

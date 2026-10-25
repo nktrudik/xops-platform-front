@@ -51,20 +51,23 @@ defineProps<{ copilot: Copilot }>()
   position: relative;
   overflow: hidden;
   padding: 22px;
-  min-height: 268px;
+  min-height: 284px;
+  background: linear-gradient(180deg, #f9fafc 0%, white 42%);
+  border-color: #d8dce4;
+  box-shadow: 0 2px 4px #20212604;
   display: flex;
   flex-direction: column;
   min-width: 0;
   transition:
-    transform 220ms,
+    transform 320ms var(--ease-spring),
     border-color 180ms,
-    box-shadow 180ms;
+    box-shadow 220ms;
 }
 .copilot-card::before {
   content: '';
   position: absolute;
   inset: 0 auto 0 0;
-  width: 3px;
+  width: 4px;
   background: var(--red);
   transform: scaleY(0);
   transform-origin: center;
@@ -74,9 +77,11 @@ defineProps<{ copilot: Copilot }>()
   transform: scaleY(1);
 }
 .copilot-card:has(.card-open):hover {
-  transform: translateY(-4px);
-  border-color: #d7afb4;
-  box-shadow: 0 10px 28px rgb(35 23 28 / 8%);
+  transform: translateY(-5px);
+  border-color: #e69ca4;
+  box-shadow:
+    0 12px 30px #26121a12,
+    0 3px 8px #26121a07;
 }
 .copilot-card:has(.card-open):active {
   transform: translateY(-1px) scale(0.993);
@@ -88,11 +93,19 @@ defineProps<{ copilot: Copilot }>()
   gap: 12px;
 }
 .card-heading .icon-tile {
-  width: 40px;
-  height: 40px;
-  border-radius: 9px;
+  width: 46px;
+  height: 46px;
+  border-radius: 11px;
   background: #fcebed;
   color: var(--red);
+  box-shadow: inset 0 0 0 1px #e3061110;
+  transition:
+    transform 320ms var(--ease-spring),
+    box-shadow 220ms;
+}
+.copilot-card:has(.card-open):is(:hover, :focus-within) .icon-tile {
+  transform: translateY(-2px) rotate(-4deg);
+  box-shadow: 0 5px 12px #20212612;
 }
 .copilot-card[data-format='embedded'] .icon-tile {
   background: #292a30;
@@ -103,23 +116,27 @@ defineProps<{ copilot: Copilot }>()
   color: #555c69;
 }
 .card-heading .icon-tile svg {
-  width: 21px;
-  height: 21px;
+  width: 24px;
+  height: 24px;
 }
 .copilot-card h3 {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 500;
   letter-spacing: -0.35px;
   line-height: 1.4;
-  margin: 20px 0 10px;
+  margin: 18px 0 10px;
   overflow-wrap: anywhere;
 }
 .copilot-card p {
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.7;
-  margin: 0 0 24px;
+  color: #545a66;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 20px;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .card-bottom {
   display: flex;
@@ -129,13 +146,13 @@ defineProps<{ copilot: Copilot }>()
   gap: 10px;
   margin-top: auto;
   padding-top: 14px;
-  border-top: 1px solid #eff1f4;
+  border-top: 1px solid #e4e7ed;
 }
 .interface-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 .interface-label svg {
@@ -146,17 +163,18 @@ defineProps<{ copilot: Copilot }>()
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #353944;
-  font-size: 11px;
+  color: var(--red);
+  font-size: 12px;
   font-weight: 500;
-  padding: 6px 0 6px 6px;
+  min-height: 40px;
+  padding: 4px 0 4px 8px;
 }
 .card-action-icon {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid #dfe2e8;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e9b6bc;
   border-radius: 50%;
   transition:
     background 200ms,
@@ -181,7 +199,7 @@ defineProps<{ copilot: Copilot }>()
   transform: translateX(3px);
 }
 .unavailable-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 .card-unavailable {
@@ -197,7 +215,7 @@ defineProps<{ copilot: Copilot }>()
   align-items: center;
   gap: 12px 24px;
   min-height: 0;
-  padding: 20px 24px;
+  padding: 18px 22px;
 }
 .catalog-list .card-heading {
   grid-column: 1;
@@ -208,13 +226,13 @@ defineProps<{ copilot: Copilot }>()
   grid-column: 1;
   grid-row: 2;
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
 }
 .catalog-list .copilot-card p {
   grid-column: 2;
   grid-row: 1 / 3;
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 .catalog-list .card-bottom {
   grid-column: 3;
