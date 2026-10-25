@@ -34,7 +34,7 @@ function clearPosition(element: Element): void {
       v-for="(copilot, index) in copilots"
       :key="copilot.id"
       class="catalog-item"
-      :style="{ '--entry-delay': `${Math.min(index, 7) * 35}ms` }"
+      :style="{ '--entry-delay': `${Math.min(index, 6) * 30}ms` }"
     >
       <CopilotCard :copilot="copilot" />
     </div>
@@ -62,19 +62,19 @@ function clearPosition(element: Element): void {
 }
 .catalog-motion-enter-active {
   transition:
-    opacity 280ms var(--entry-delay),
-    transform 280ms var(--entry-delay);
+    opacity 360ms var(--entry-delay),
+    transform 360ms var(--entry-delay) var(--ease-out);
 }
 .catalog-motion-leave-active {
   position: absolute;
   z-index: 0;
   pointer-events: none;
   transition:
-    opacity 180ms,
-    transform 180ms;
+    opacity 200ms,
+    transform 200ms;
 }
 .catalog-motion-move {
-  transition: transform 280ms cubic-bezier(0.22, 0.68, 0.2, 1);
+  transition: transform 380ms var(--ease-out);
 }
 .catalog-motion-enter-from {
   opacity: 0;

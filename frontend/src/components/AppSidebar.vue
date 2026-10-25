@@ -174,7 +174,7 @@ const formats = computed(() => [
 .workspace-label small {
   display: block;
   font-size: 10px;
-  color: var(--sidebar-text);
+  color: #c5c8d0;
   margin-top: 5px;
 }
 .sidebar-nav {
@@ -286,7 +286,7 @@ const formats = computed(() => [
 .sidebar-label {
   padding: 0 12px;
   margin-bottom: 10px;
-  font-size: 9px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1.4px;
   color: var(--sidebar-text);
@@ -299,7 +299,7 @@ const formats = computed(() => [
   padding: 12px;
   border-radius: 7px;
   color: var(--sidebar-text);
-  font-size: 12px;
+  font-size: 14px;
   position: relative;
   transition:
     background 160ms,
@@ -312,7 +312,7 @@ const formats = computed(() => [
 }
 .sidebar-link > small {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: #c3c6cd;
 }
@@ -321,17 +321,18 @@ const formats = computed(() => [
   color: white;
 }
 .sidebar-link.active {
-  background: #373a42;
+  background: linear-gradient(100deg, #592b34, #37323b);
   color: white;
+  box-shadow: inset 0 0 0 1px #e3061126;
 }
 .sidebar-link.active > svg {
-  color: #ff6b73;
+  color: #ff8690;
 }
 .sidebar-formats-label {
   margin-top: 32px;
 }
 .format-link {
-  font-size: 11px;
+  font-size: 13px;
   gap: 10px;
 }
 .sidebar-footer {
@@ -339,7 +340,7 @@ const formats = computed(() => [
   align-items: flex-start;
   gap: 10px;
   margin: auto 8px 28px;
-  padding-top: 64px;
+  padding-top: 40px;
 }
 .sidebar-footer-icon {
   display: grid;

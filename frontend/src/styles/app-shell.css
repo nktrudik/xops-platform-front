@@ -20,17 +20,17 @@
 }
 .workspace-page-enter-active {
   transition:
-    opacity 180ms,
-    transform 180ms;
+    opacity 240ms,
+    transform 280ms var(--ease-out);
 }
 .workspace-page-leave-active {
   transition:
-    opacity 120ms,
-    transform 120ms;
+    opacity 150ms,
+    transform 150ms;
 }
 .workspace-page-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(10px);
 }
 .workspace-page-leave-to {
   opacity: 0;

@@ -23,6 +23,8 @@ export type IconName =
   | 'external'
   | 'info'
   | 'check'
+  | 'play'
+  | 'pause'
 defineProps<{ name: IconName }>()
 
 const paths: Record<IconName, string> = {
@@ -49,6 +51,8 @@ const paths: Record<IconName, string> = {
   external: 'M14 3h7v7m0-7L10 14M10 3H3v18h18v-7',
   info: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 11v6m0-10v.1',
   check: 'm5 12 4 4L19 6',
+  play: 'm8 4 12 8-12 8V4Z',
+  pause: 'M8 5v14M16 5v14',
 }
 </script>
 

@@ -80,15 +80,19 @@ const formats = computed(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  min-height: 268px;
-  padding: 20px 28px 20px 32px;
-  background: #202126;
-  border: 1px solid #3d3e45;
+  gap: 28px;
+  min-height: 320px;
+  padding: 24px 24px 24px 32px;
+  background:
+    radial-gradient(ellipse at 76% 10%, #42434e70, transparent 55%),
+    linear-gradient(120deg, #202126, #292a33);
+  border: 1px solid #4f505a;
   border-radius: 16px;
   color: #fff;
   overflow: clip;
-  box-shadow: 0 8px 22px rgb(30 32 40 / 9%);
+  box-shadow:
+    0 12px 28px rgb(30 32 40 / 12%),
+    inset 0 1px 0 #ffffff0a;
 }
 .hero-signal-stripe {
   position: absolute;
@@ -110,10 +114,10 @@ const formats = computed(
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 9px;
-  letter-spacing: 1.4px;
+  font-size: 10px;
+  letter-spacing: 1.3px;
   text-transform: uppercase;
-  color: #b5b5bf;
+  color: #d0d0da;
 }
 .hero-eyebrow > span:first-child {
   width: 5px;
@@ -128,7 +132,7 @@ const formats = computed(
   margin-inline: 2px;
 }
 .hero-content h1 {
-  font-size: clamp(23px, 2.2vw, 32px);
+  font-size: clamp(28px, 2.3vw, 36px);
   line-height: 1.25;
   letter-spacing: -0.9px;
   font-weight: 500;
@@ -137,9 +141,9 @@ const formats = computed(
   text-wrap: balance;
 }
 .hero-copy {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
-  color: #c8c8d1;
+  color: #d4d4df;
   margin: 0 0 20px;
 }
 .hero-mobile-break {
@@ -149,12 +153,12 @@ const formats = computed(
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 610px;
+  max-width: 620px;
   background: #fff;
   color: var(--text);
-  padding: 5px 5px 5px 14px;
+  padding: 6px 6px 6px 16px;
   border: 1px solid #e4e4e9;
-  border-radius: 9px;
+  border-radius: 10px;
   transition:
     border-color 200ms,
     box-shadow 200ms,
@@ -162,8 +166,10 @@ const formats = computed(
 }
 .signal-search:focus-within {
   border-color: #ff616b;
-  box-shadow: 0 0 0 4px rgb(227 6 17 / 20%);
-  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 4px rgb(227 6 17 / 24%),
+    0 7px 24px #0000001f;
+  transform: translateY(-2px);
 }
 .signal-search > svg {
   width: 18px;
@@ -174,11 +180,11 @@ const formats = computed(
 .signal-search input {
   flex: 1;
   min-width: 0;
-  height: 36px;
+  height: 38px;
   border: 0;
   padding: 0;
   background: none;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text);
 }
 .signal-search input:focus-visible {
@@ -202,8 +208,8 @@ const formats = computed(
 .search-submit {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 36px;
+  width: 42px;
+  height: 40px;
   border: 0;
   background: var(--red);
   color: white;
@@ -240,9 +246,9 @@ const formats = computed(
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  color: #c0c0ca;
-  margin-top: 16px;
-  font-size: 9px;
+  color: #cdced8;
+  margin-top: 18px;
+  font-size: 11px;
 }
 .hero-statistics > span {
   display: flex;
@@ -251,7 +257,7 @@ const formats = computed(
 }
 .hero-statistics b {
   color: #f1f1f5;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
@@ -282,19 +288,19 @@ const formats = computed(
     padding-inline: 24px 12px;
   }
   .hero-content h1 {
-    font-size: 27px;
+    font-size: 28px;
   }
 }
 @media (max-width: 1000px) and (min-width: 701px) {
   .hero-content h1 {
-    font-size: 25px;
+    font-size: 28px;
   }
   .hero-copy {
-    font-size: 12px;
+    font-size: 14px;
   }
   .hero-statistics {
     gap: 8px;
-    font-size: 8px;
+    font-size: 11px;
   }
   .hero-statistics > i:last-of-type,
   .hero-statistics > span:last-child {
@@ -306,7 +312,7 @@ const formats = computed(
     flex-direction: column;
     align-items: stretch;
     gap: 0;
-    padding: 26px 20px 16px;
+    padding: 24px 20px 20px;
     border-radius: 14px;
   }
   .hero-content {
@@ -314,19 +320,18 @@ const formats = computed(
     padding: 0;
   }
   .hero-eyebrow {
-    font-size: 8px;
+    font-size: 9px;
     letter-spacing: 1px;
   }
   .hero-content h1 {
     font-size: 27px;
     line-height: 1.2;
-    margin-top: 20px;
+    margin: 16px 0 20px;
     letter-spacing: -0.8px;
     max-width: 320px;
   }
   .hero-copy {
-    font-size: 12px;
-    margin-bottom: 20px;
+    display: none;
   }
   .hero-mobile-break {
     display: block;
@@ -335,11 +340,11 @@ const formats = computed(
     gap: 8px;
   }
   .signal-search input {
-    font-size: 11px;
+    font-size: 12px;
   }
   .hero-statistics {
     gap: 8px;
-    font-size: 8px;
+    font-size: 10px;
     margin-top: 14px;
   }
   .hero-statistics > i:last-of-type,
