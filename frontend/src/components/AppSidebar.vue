@@ -135,11 +135,18 @@ const formats = computed(() => [
 <style scoped>
 .app-sidebar {
   height: 100dvh;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   padding: 28px 16px max(20px, env(safe-area-inset-bottom));
   background: var(--sidebar);
   color: white;
+}
+.sidebar-brand,
+.workspace-label,
+.sidebar-footer,
+.sidebar-signature {
+  flex-shrink: 0;
 }
 .sidebar-brand {
   padding: 0 12px;
@@ -162,9 +169,14 @@ const formats = computed(() => [
   place-items: center;
   width: 30px;
   height: 30px;
+  flex-shrink: 0;
   border: 1px solid #555963;
   border-radius: 6px;
   font: 500 12px var(--font-heading);
+}
+.workspace-label > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .workspace-label b {
   display: block;
@@ -180,6 +192,13 @@ const formats = computed(() => [
 .sidebar-nav {
   position: relative;
   display: grid;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  align-content: start;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  container-type: inline-size;
   gap: 4px;
 }
 .sidebar-active-marker {
@@ -243,9 +262,9 @@ const formats = computed(() => [
   padding-inline: 9px;
 }
 .sidebar-collapsed .workspace-label {
-  width: 38px;
+  width: 40px;
   padding: 4px;
-  margin-inline: 9px;
+  margin-inline: 8px;
   border-color: transparent;
   background: none;
 }
@@ -257,7 +276,7 @@ const formats = computed(() => [
 }
 .sidebar-collapsed .sidebar-link {
   justify-content: center;
-  padding-inline: 12px;
+  padding-inline: 8px;
 }
 .sidebar-collapsed .sidebar-link > span,
 .sidebar-collapsed .sidebar-link > small {
@@ -270,7 +289,7 @@ const formats = computed(() => [
   padding-inline: 0;
 }
 .sidebar-collapsed .sidebar-footer {
-  visibility: hidden;
+  display: none;
 }
 .sidebar-collapsed .sidebar-signature {
   padding-inline: 0;
@@ -284,6 +303,8 @@ const formats = computed(() => [
   white-space: nowrap;
 }
 .sidebar-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 0 12px;
   margin-bottom: 10px;
   font-size: 10px;
@@ -310,6 +331,10 @@ const formats = computed(() => [
   height: 18px;
   flex-shrink: 0;
 }
+.sidebar-link > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .sidebar-link > small {
   margin-left: auto;
   font-size: 12px;
@@ -319,6 +344,9 @@ const formats = computed(() => [
 .sidebar-link:hover {
   background: #2c2f36;
   color: white;
+}
+.sidebar-link:focus-visible {
+  outline-offset: -3px;
 }
 .sidebar-link.active {
   background: linear-gradient(100deg, #592b34, #37323b);
@@ -373,12 +401,48 @@ const formats = computed(() => [
   color: var(--sidebar-text);
   font-size: 9px;
 }
-@media (max-height: 740px) {
+/* Keep the icon rail until the expanding sidebar has room for labels and counts. */
+@container (max-width: 120px) {
+  .sidebar-link {
+    justify-content: center;
+    padding-inline: 6px;
+  }
+  .sidebar-link > span,
+  .sidebar-link > small {
+    display: none;
+  }
+  .sidebar-label {
+    white-space: nowrap;
+    overflow: hidden;
+    color: transparent;
+  }
+}
+@media (max-height: 800px) {
   .app-sidebar {
-    overflow-y: auto;
+    padding-block: 20px max(16px, env(safe-area-inset-bottom));
+  }
+  .workspace-label {
+    margin-block: 20px 24px;
   }
   .sidebar-footer {
-    padding-top: 28px;
+    display: none;
+  }
+  .sidebar-signature {
+    padding-top: 14px;
+  }
+}
+@media (max-height: 600px) {
+  .app-sidebar {
+    padding-block: 16px max(12px, env(safe-area-inset-bottom));
+  }
+  .workspace-label {
+    margin-block: 14px 16px;
+  }
+  .sidebar-formats-label {
+    margin-top: 20px;
+  }
+  .sidebar-label {
+    margin-bottom: 6px;
   }
 }
 </style>
