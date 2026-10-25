@@ -16,15 +16,6 @@ export type IconName =
   | 'refresh'
   | 'alert'
   | 'trash'
-  | 'grid'
-  | 'list'
-  | 'menu'
-  | 'logout'
-  | 'external'
-  | 'info'
-  | 'check'
-  | 'play'
-  | 'pause'
 defineProps<{ name: IconName }>()
 
 const paths: Record<IconName, string> = {
@@ -44,15 +35,6 @@ const paths: Record<IconName, string> = {
   refresh: 'M20 7V2m0 5h-5M4 17v5m0-5h5M4 8a9 9 0 0 1 16-1M20 16a9 9 0 0 1-16 1',
   alert: 'm12 3 10 18H2L12 3Zm0 5v6m0 3v.1',
   trash: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7',
-  grid: 'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
-  list: 'M8 5h13M8 12h13M8 19h13M3 5h.1M3 12h.1M3 19h.1',
-  menu: 'M3 6h18M3 12h18M3 18h18',
-  logout: 'M10 3H3v18h7m5-14 5 5-5 5m-8-5h13',
-  external: 'M14 3h7v7m0-7L10 14M10 3H3v18h18v-7',
-  info: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 11v6m0-10v.1',
-  check: 'm5 12 4 4L19 6',
-  play: 'm8 4 12 8-12 8V4Z',
-  pause: 'M8 5v14M16 5v14',
 }
 </script>
 

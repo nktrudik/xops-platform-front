@@ -60,10 +60,8 @@ describe('Каталог', () => {
     expect(wrapper.findAll('article')).toHaveLength(7)
     expect(wrapper.find('a[href="/copilots/new"]').exists()).toBe(true)
     await wrapper.get('input').setValue('новый')
-    await flushPromises()
     expect(wrapper.findAll('article')).toHaveLength(1)
     await wrapper.get('input').setValue('ничего такого')
-    await flushPromises()
     expect(wrapper.text()).toContain('Ничего не найдено')
   })
 
@@ -108,7 +106,7 @@ describe('Чат', () => {
             id: '2',
             request_id: 'request',
             role: 'assistant',
-            content: '**Ответ** <script>alert(1)</script>',
+            content: 'Ответ <script>alert(1)</script>',
             status: 'complete',
             error: null,
             created_at: '2026-01-01',
@@ -139,7 +137,6 @@ describe('Чат', () => {
     await flushPromises()
     expect(wrapper.findAll('.message-user')).toHaveLength(1)
     expect(wrapper.text()).toContain('Ответ <script>alert(1)</script>')
-    expect(wrapper.get('.message-assistant strong').text()).toBe('Ответ')
     expect(wrapper.find('script').exists()).toBe(false)
   })
 

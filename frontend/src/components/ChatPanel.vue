@@ -5,7 +5,6 @@ import { usePlatform } from '../app/context'
 import { useChat } from '../composables/use-chat'
 import AppIcon from './AppIcon.vue'
 import DeleteConversationDialog from './DeleteConversationDialog.vue'
-import MarkdownMessage from './MarkdownMessage.vue'
 
 const props = defineProps<{ copilot: Copilot }>()
 const { chat } = usePlatform()
@@ -190,8 +189,7 @@ watch(
           :data-message-id="message.id"
         >
           <span class="message-author">{{ message.role === 'user' ? 'Вы' : copilot.name }}</span>
-          <MarkdownMessage v-if="message.role === 'assistant'" :content="message.content" />
-          <p v-else>{{ message.content }}</p>
+          <p>{{ message.content }}</p>
           <small v-if="message.status === 'failed'" class="message-failed">{{
             message.error ?? 'Ответ не был получен'
           }}</small>

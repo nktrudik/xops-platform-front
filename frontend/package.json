@@ -18,7 +18,6 @@
     "check": "npm run lint && npm run format:check && npm run type-check && npm test"
   },
   "dependencies": {
-    "markdown-it": "^15.0.3",
     "vue": "^3.5.43",
     "vue-router": "^5.4.0"
   },

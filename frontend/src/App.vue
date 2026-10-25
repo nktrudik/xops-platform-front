@@ -1,41 +1,16 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { watch, onBeforeUnmount, onMounted, shallowRef } from 'vue'
+import { watch, onBeforeUnmount } from 'vue'
 import { router } from './app/router'
 import { session } from './services/api'
 import { usePlatform } from './app/context'
 import AppHeader from './components/AppHeader.vue'
-import AppSidebar from './components/AppSidebar.vue'
-import MobileNavigation from './components/MobileNavigation.vue'
-import CommandPalette from './components/CommandPalette.vue'
-import './styles/app-shell.css'
-const navigationOpen = shallowRef(false)
-const commandOpen = shallowRef(false)
-const sidebarCollapsed = shallowRef(false)
-function onShortcut(event: KeyboardEvent): void {
-  if (event.repeat || event.isComposing) return
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && session.value) {
-    event.preventDefault()
-    navigationOpen.value = false
-    commandOpen.value = !commandOpen.value
-  }
-}
-onMounted(() => window.addEventListener('keydown', onShortcut))
-onBeforeUnmount(() => window.removeEventListener('keydown', onShortcut))
-watch(
-  () => router.currentRoute.value.fullPath,
-  () => {
-    navigationOpen.value = false
-  },
-)
 const { startCatalogPolling, stopCatalogPolling, clearCatalog } = usePlatform()
 watch(
   session,
   (user) => {
     if (user) startCatalogPolling()
     else {
-      commandOpen.value = false
-      navigationOpen.value = false
       stopCatalogPolling()
       clearCatalog()
       if (router.currentRoute.value.name && router.currentRoute.value.name !== 'login')
@@ -49,36 +24,12 @@ onBeforeUnmount(stopCatalogPolling)
 
 <template>
   <a class="skip-link" href="#main">Перейти к содержимому</a>
-  <div
-    class="application"
-    :class="{
-      'application-signed-in': session,
-      'application-collapsed': sidebarCollapsed,
-    }"
-  >
-    <AppSidebar
-      v-if="session"
-      class="desktop-sidebar"
-      :collapsed="sidebarCollapsed"
-      @toggle="sidebarCollapsed = !sidebarCollapsed"
-    />
-    <div class="application-workspace">
-      <AppHeader
-        class="workspace-header"
-        @open-navigation="navigationOpen = true"
-        @open-command="commandOpen = true"
-      />
-      <main id="main" class="workspace-main" tabindex="-1">
-        <RouterView v-slot="{ Component, route }"
-          ><Transition name="workspace-page" mode="out-in"
-            ><component :is="Component" :key="route.path" /></Transition
-        ></RouterView>
-      </main>
-      <footer class="workspace-footer">
-        <span translate="no">XOps Platform</span><span>AI-инструменты команд МТС</span>
-      </footer>
-    </div>
-    <MobileNavigation v-if="session" v-model="navigationOpen" />
-    <CommandPalette v-if="session" v-model="commandOpen" />
-  </div>
+  <AppHeader />
+  <main id="main" class="page-container" tabindex="-1">
+    <RouterView />
+  </main>
+  <footer class="app-footer page-container">
+    <span>XOps Platform</span>
+    <span>Каталог Copilot · XOps Platform</span>
+  </footer>
 </template>

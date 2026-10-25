@@ -22,83 +22,77 @@ watch(
 </script>
 
 <template>
-  <div class="copilot-workspace">
-    <nav class="breadcrumbs" aria-label="Хлебные крошки">
-      <RouterLink :to="{ name: 'catalog' }" aria-label="Каталог Copilot"
-        ><AppIcon name="home" /><span>Каталог</span></RouterLink
-      ><AppIcon name="chevron" /><span>{{ copilot?.name ?? 'Copilot' }}</span>
-    </nav>
-    <StatePanel v-if="loading" title="Загружаем Copilot" loading />
-    <StatePanel
-      v-else-if="error && !hasLoaded"
-      title="Не удалось открыть Copilot"
-      :description="error"
-      ><button class="button button-primary" @click="loadCatalog">
-        Повторить попытку
-      </button></StatePanel
-    >
-    <template v-else-if="copilot">
-      <div class="copilot-page-heading">
-        <span class="icon-tile"><AppIcon :name="copilot.icon" /></span>
-        <div>
-          <div class="copilot-title-row">
-            <h1>{{ copilot.name }}</h1>
-            <StatusBadge :status="copilot.status" />
-          </div>
-          <p>{{ copilot.description }}</p>
+  <nav class="breadcrumbs" aria-label="Хлебные крошки">
+    <RouterLink to="/" aria-label="Каталог Copilot"
+      ><AppIcon name="home" /><span>Каталог</span></RouterLink
+    ><AppIcon name="chevron" /><span>{{ copilot?.name ?? 'Copilot' }}</span>
+  </nav>
+  <StatePanel v-if="loading" title="Загружаем Copilot" loading />
+  <StatePanel
+    v-else-if="error && !hasLoaded"
+    title="Не удалось открыть Copilot"
+    :description="error"
+    ><button class="button button-primary" @click="loadCatalog">
+      Повторить попытку
+    </button></StatePanel
+  >
+  <template v-else-if="copilot">
+    <div class="copilot-page-heading">
+      <span class="icon-tile"><AppIcon :name="copilot.icon" /></span>
+      <div>
+        <div class="copilot-title-row">
+          <h1>{{ copilot.name }}</h1>
+          <StatusBadge :status="copilot.status" />
         </div>
+        <p>{{ copilot.description }}</p>
       </div>
-      <StatePanel
-        v-if="copilot.interfaceType === null"
-        title="Интерфейс Copilot не настроен"
-        :description="copilot.configurationError"
-      />
-      <StatePanel
-        v-else-if="copilot.status !== 'available'"
-        :title="
-          copilot.status === 'maintenance'
-            ? 'Copilot на обслуживании'
-            : copilot.status === 'coming-soon'
-              ? 'Copilot скоро появится'
-              : 'Copilot недоступен'
-        "
-        description="Выберите другой инструмент в каталоге."
-        ><RouterLink class="button button-secondary" to="/"
-          >Вернуться в каталог</RouterLink
-        ></StatePanel
-      >
-      <ChatPanel
-        v-else-if="copilot.interfaceType === 'chat'"
-        :key="copilot.id"
-        :copilot="copilot"
-      />
-      <EmbeddedApp
-        v-else-if="copilot.interfaceType === 'embedded'"
-        :key="`${copilot.id}:${copilot.applicationUrl}`"
-        :copilot="copilot"
-      />
-      <StatePanel
-        v-else
-        title="Внешний продукт"
-        description="Откройте сервис в отдельной вкладке. Вы сможете вернуться к каталогу в XOps Platform."
-      >
-        <a
-          class="button button-primary"
-          :href="copilot.applicationUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          >Перейти к продукту<AppIcon name="arrow"
-        /></a>
-      </StatePanel>
-    </template>
+    </div>
+    <StatePanel
+      v-if="copilot.interfaceType === null"
+      title="Интерфейс Copilot не настроен"
+      :description="copilot.configurationError"
+    />
+    <StatePanel
+      v-else-if="copilot.status !== 'available'"
+      :title="
+        copilot.status === 'maintenance'
+          ? 'Copilot на обслуживании'
+          : copilot.status === 'coming-soon'
+            ? 'Copilot скоро появится'
+            : 'Copilot недоступен'
+      "
+      description="Выберите другой инструмент в каталоге."
+      ><RouterLink class="button button-secondary" to="/"
+        >Вернуться в каталог</RouterLink
+      ></StatePanel
+    >
+    <ChatPanel v-else-if="copilot.interfaceType === 'chat'" :key="copilot.id" :copilot="copilot" />
+    <EmbeddedApp
+      v-else-if="copilot.interfaceType === 'embedded'"
+      :key="`${copilot.id}:${copilot.applicationUrl}`"
+      :copilot="copilot"
+    />
     <StatePanel
       v-else
-      title="Copilot не найден"
-      description="Возможно, приложение удалено из каталога или ссылка неверна."
-      ><RouterLink class="button button-primary" to="/">Вернуться в каталог</RouterLink></StatePanel
+      title="Внешний продукт"
+      description="Откройте сервис в отдельной вкладке. Вы сможете вернуться к каталогу в XOps Platform."
     >
-    <CatalogNotice />
-  </div>
+      <a
+        class="button button-primary"
+        :href="copilot.applicationUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Перейти к продукту<AppIcon name="arrow"
+      /></a>
+    </StatePanel>
+  </template>
+  <StatePanel
+    v-else
+    title="Copilot не найден"
+    description="Возможно, приложение удалено из каталога или ссылка неверна."
+    ><RouterLink class="button button-primary" to="/">Вернуться в каталог</RouterLink></StatePanel
+  >
+  <CatalogNotice />
 </template>
 
 <style scoped>
@@ -120,7 +114,7 @@ watch(
 }
 h1 {
   margin: 0;
-  font-size: clamp(23px, 2.2vw, 30px);
+  font-size: clamp(26px, 3vw, 38px);
   line-height: 1.25;
   letter-spacing: -0.8px;
 }
