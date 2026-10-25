@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { usePlatform } from '../app/context'
 import { searchCopilots } from '../domain/copilot'
-import AppIcon from '../components/AppIcon.vue'
+import ClassicHero from '../components/ClassicHero.vue'
 import CopilotCard from '../components/CopilotCard.vue'
 import StatePanel from '../components/StatePanel.vue'
 import CatalogNotice from '../components/CatalogNotice.vue'
@@ -18,41 +18,7 @@ function focusResults(): void {
 </script>
 
 <template>
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="hero-eyebrow"><span class="eyebrow-dot" /> Единое пространство AI Copilot</div>
-    <h1 id="hero-title">
-      Помощники для ваших<br class="desktop-break" />
-      рабочих задач
-    </h1>
-    <p class="hero-description">
-      Находите нужный Copilot и работайте с ним в одном пространстве.<br class="desktop-break" />
-      От первого вопроса до готового решения.
-    </p>
-    <form class="search-form" role="search" @submit.prevent="focusResults">
-      <div class="search-input-wrap">
-        <AppIcon name="search" />
-        <label class="sr-only" for="copilot-search">Поиск Copilot</label>
-        <input
-          id="copilot-search"
-          v-model="query"
-          type="search"
-          autocomplete="off"
-          placeholder="Название Copilot или ваша задача"
-        />
-        <button
-          v-if="query"
-          class="icon-button search-clear"
-          type="button"
-          aria-label="Очистить поиск"
-          @click="query = ''"
-        >
-          <AppIcon name="close" />
-        </button>
-      </div>
-      <button class="button button-primary" type="submit">Найти<AppIcon name="arrow" /></button>
-    </form>
-    <span class="hero-watermark" aria-hidden="true">X</span>
-  </section>
+  <ClassicHero v-model="query" @submit="focusResults" />
 
   <section id="catalog" class="catalog-section" aria-labelledby="catalog-title">
     <div class="section-heading">
@@ -91,104 +57,6 @@ function focusResults(): void {
 </template>
 
 <style scoped>
-.hero {
-  position: relative;
-  overflow: hidden;
-  margin-top: 40px;
-  padding: 52px 56px 48px;
-  border-radius: 32px;
-  background: linear-gradient(
-    115deg,
-    color-mix(in srgb, #913f98 10%, white),
-    color-mix(in srgb, #0082c8 12%, white)
-  );
-}
-.hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  position: relative;
-  z-index: 1;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-.eyebrow-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--red);
-}
-h1 {
-  position: relative;
-  z-index: 1;
-  margin: 22px 0 18px;
-  max-width: 1000px;
-  font-size: clamp(30px, 3.3vw, 48px);
-  line-height: 1.2;
-  letter-spacing: -1.3px;
-}
-.hero-description {
-  position: relative;
-  z-index: 1;
-  color: var(--text-secondary);
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.6;
-}
-.hero-watermark {
-  position: absolute;
-  right: 46px;
-  top: -52px;
-  font-family: var(--font-heading);
-  font-size: 390px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: rgb(255 255 255 / 35%);
-  pointer-events: none;
-  transform: rotate(-9deg);
-}
-.search-form {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 12px;
-  max-width: 1100px;
-  margin-top: 32px;
-}
-.search-input-wrap {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex: 1;
-  background: white;
-  border-radius: 14px;
-  padding: 0 18px;
-  min-width: 0;
-  border: 1px solid transparent;
-}
-.search-input-wrap:focus-within {
-  border-color: var(--text-secondary);
-}
-.search-input-wrap > svg {
-  flex-shrink: 0;
-  color: var(--text-secondary);
-}
-input {
-  height: 58px;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  font-size: 16px;
-  outline: none;
-  padding: 0;
-  min-width: 0;
-}
-input::-webkit-search-cancel-button {
-  display: none;
-}
-.search-form .button {
-  min-width: 150px;
-}
 .catalog-section {
   margin-top: 52px;
   scroll-margin-top: 110px;
@@ -226,35 +94,8 @@ h2 {
   .catalog-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .hero {
-    padding: 40px;
-  }
-  .hero-watermark {
-    right: -60px;
-  }
 }
 @media (max-width: 640px) {
-  .hero {
-    margin-top: 24px;
-    padding: 28px 22px;
-    border-radius: 24px;
-  }
-  .hero-description {
-    font-size: 16px;
-  }
-  .desktop-break {
-    display: none;
-  }
-  h1 {
-    letter-spacing: -0.8px;
-  }
-  .search-form {
-    flex-direction: column;
-    margin-top: 24px;
-  }
-  .search-form .button {
-    min-height: 50px;
-  }
   .catalog-section {
     margin-top: 36px;
   }
@@ -264,11 +105,6 @@ h2 {
   }
   .section-heading {
     align-items: center;
-  }
-  .hero-watermark {
-    font-size: 260px;
-    right: -70px;
-    top: 20px;
   }
 }
 </style>
