@@ -12,33 +12,31 @@ const activeId = shallowRef<string | null>(null)
 const paused = shallowRef(false)
 const inView = shallowRef(true)
 const pageVisible = shallowRef(true)
-const available = computed(() => props.copilots.filter((item) => item.status === 'available'))
-const nodes = computed(() => buildSignalNodes(available.value, props.query))
-const active = computed(
-  () => nodes.value.find((node) => node.copilot.id === activeId.value)?.copilot,
-)
+const matching = computed(() => searchCopilots(props.copilots, props.query))
+const available = computed(() => matching.value.filter((item) => item.status === 'available'))
+const nodes = computed(() => buildSignalNodes(available.value, activeId.value))
+const active = computed(() => matching.value.find((copilot) => copilot.id === activeId.value))
 const position = computed(
-  () => nodes.value.findIndex((node) => node.copilot.id === activeId.value) + 1,
+  () => matching.value.findIndex((copilot) => copilot.id === activeId.value) + 1,
 )
-const matchCount = computed(() => searchCopilots(available.value, props.query).length)
 const motionPaused = computed(() => paused.value || !inView.value || !pageVisible.value)
-watch(nodes, (value) => {
-  if (activeId.value && !value.some((node) => node.copilot.id === activeId.value))
-    activeId.value = props.query.trim() ? (value[0]?.copilot.id ?? null) : null
+watch(matching, (value) => {
+  if (activeId.value && !value.some((copilot) => copilot.id === activeId.value))
+    activeId.value = props.query.trim() ? (value[0]?.id ?? null) : null
 })
 watch(
   () => props.query,
   () => {
-    activeId.value = props.query.trim() ? (nodes.value[0]?.copilot.id ?? null) : null
+    activeId.value = props.query.trim() ? (matching.value[0]?.id ?? null) : null
   },
 )
 function move(direction: number): void {
   const index = position.value
-    ? (position.value - 1 + direction + nodes.value.length) % nodes.value.length
+    ? (position.value - 1 + direction + matching.value.length) % matching.value.length
     : direction > 0
       ? 0
-      : nodes.value.length - 1
-  activeId.value = nodes.value[index]?.copilot.id ?? null
+      : matching.value.length - 1
+  activeId.value = matching.value[index]?.id ?? null
 }
 function onPointerleave(event: PointerEvent): void {
   if (event.pointerType !== 'touch' && !root.value?.contains(document.activeElement))
@@ -88,17 +86,19 @@ onBeforeUnmount(() => {
       />
       <div class="signal-caption" aria-live="polite">
         <span class="signal-led" /><span>{{
-          query.trim() ? `Совпадений: ${matchCount}` : `${available.length} в рабочем пространстве`
+          query.trim()
+            ? `Совпадений: ${matching.length}`
+            : `${available.length} в рабочем пространстве`
         }}</span
-        ><span v-if="available.length > nodes.length"
-          >+{{ available.length - nodes.length }} в каталоге</span
+        ><span v-if="matching.length > nodes.length"
+          >+{{ matching.length - nodes.length }} в обзоре</span
         >
       </div>
     </div>
     <SignalInspector
       :copilot="active"
       :position="position"
-      :total="nodes.length"
+      :total="matching.length"
       :description-id="descriptionId"
       :loading="loading"
       :searching="!!query.trim()"

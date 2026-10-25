@@ -13,7 +13,6 @@ export default defineConfig({
   webServer: {
     command: 'npm exec vite -- --host 127.0.0.1 --port 5174 --strictPort',
     url: 'http://127.0.0.1:5174/',
-    env: { VITE_AUTH_DISABLED: 'false' },
     reuseExistingServer: false,
   },
 })

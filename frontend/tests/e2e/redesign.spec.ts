@@ -163,6 +163,9 @@ test('каталог работает с пустым и большим отве
   await expect(page.locator('.copilot-card').last().getByRole('heading')).toBeVisible()
   for (const width of [320, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 })
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      `Переполнение при ширине ${width}px`,
+    ).toBe(true)
   }
 })
