@@ -33,7 +33,7 @@ docker compose down
 
 Одна база содержит `users`, `sessions`, `conversations`, `messages` для всех копилотов. Схема создаётся автоматически транзакционно из `backend/app/schema.sql`; обычный запуск не пересоздаёт таблицы. Compose хранит данные в volume `postgres-data`, Kubernetes — в PVC StatefulSet `postgres`. Обычные `up`, `down` и обновления образов сохраняют историю. `down -v` и удаление PVC удаляют данные. Изменение `POSTGRES_PASSWORD` в настройках не меняет пароль уже созданного PostgreSQL — его ротация выполняется отдельно.
 
-В DEV pipeline нужны защищённые переменные `POSTGRES_PASSWORD` и `XOPS_ADMIN_PASSWORD_HASH` с отключённым раскрытием `$`. Deploy создаёт Secret `<COPILOT_NAME>-credentials`; уже созданный вручную Secret также поддерживается. Значения секретов в Git не хранятся. Добавлены только PostgreSQL, его доступ внутри неймспейса и readiness backend; существующая схема развёртывания сохранена.
+В DEV pipeline нужны защищённые переменные `POSTGRES_PASSWORD` и `XOPS_ADMIN_PASSWORD_HASH` с отключённым раскрытием `$`. Deploy создаёт Secret `<COPILOT_NAME>-credentials`; уже созданный вручную Secret также поддерживается. Значения секретов в Git не хранятся. Добавлены только PostgreSQL, его доступ внутри неймспейса и readiness backend; существующая схема развёртывания сохранена!
 
 ## Диалоги универсального чата
 
