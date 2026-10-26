@@ -60,7 +60,7 @@ test('MWS visual review: identity, filters and card interaction', async ({ page 
     )
     await expect(page.locator('.format-filter[aria-pressed="true"]')).toHaveCSS(
       'background-color',
-      'rgb(252, 239, 240)',
+      'rgb(255, 255, 255)',
     )
     const samples = await page.evaluate(() => {
       const style = (selector: string) => getComputedStyle(document.querySelector(selector)!)

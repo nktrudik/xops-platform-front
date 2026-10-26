@@ -208,16 +208,18 @@ function clearDeparture(element: Element): void {
   transform: translateY(-2px);
 }
 .format-filter[aria-pressed='true'] {
-  background: #fceff0;
+  background: var(--white);
   color: var(--text);
-  border-color: var(--primary);
-  box-shadow: inset 0 0 0 1px var(--primary);
+  border-color: var(--graphite);
+  box-shadow:
+    inset 0 0 0 1px var(--graphite),
+    0 3px 8px #20202712;
 }
 .format-filter:active {
   transform: scale(0.97);
 }
 .format-filter:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 3px solid var(--graphite);
 }
 .filter-count {
   display: grid;

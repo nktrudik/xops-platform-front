@@ -63,7 +63,7 @@ async function signOut(): Promise<void> {
 <style scoped>
 .app-header {
   position: relative;
-  background: #e4e4e8;
+  background: var(--surface-platinum);
   border-bottom: 1px solid var(--border-strong);
   box-shadow: 0 3px 12px #20202708;
 }
@@ -119,7 +119,6 @@ async function signOut(): Promise<void> {
   border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
   color: var(--text);
-  background: var(--white);
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
@@ -130,13 +129,13 @@ async function signOut(): Promise<void> {
     transform var(--motion-fast);
 }
 .header-link:hover {
-  background: #f7f7f9;
+  background: var(--surface-hover);
   border-color: var(--graphite);
 }
 .header-link.is-current {
-  background: var(--white);
-  border-color: var(--border-control);
-  color: var(--text);
+  background: var(--surface-selected);
+  border-color: var(--surface-selected);
+  color: var(--on-selected);
   box-shadow: var(--shadow-control);
 }
 .header-link.is-current::after {
@@ -149,7 +148,7 @@ async function signOut(): Promise<void> {
   background: var(--primary);
 }
 .header-link.is-current:hover {
-  background: #f7f7f9;
+  background: #393942;
 }
 .header-link:active,
 .sign-out:active {
