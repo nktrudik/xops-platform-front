@@ -1,5 +1,4 @@
-/* Импортируется из main.ts → Vite ребейзит url() с base (под path-схемой → /dev/platform-xops/brand-fonts/...).
-   Пути ПЛОСКИЕ — под ConfigMap-volume шрифтов (nginx отдаёт /brand-fonts/<файл>.woff2). */
+/* Vite учитывает base в URL; public/brand-fonts включается в сборку и Docker-образ. */
 @font-face {
   font-family: 'MTS Text';
   src: url('/brand-fonts/MTSText-Regular.woff2') format('woff2');

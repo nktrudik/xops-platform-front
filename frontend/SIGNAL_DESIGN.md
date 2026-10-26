@@ -41,7 +41,7 @@
 
 Запуск описан в [UI_REDESIGN.md](UI_REDESIGN.md#локальный-запуск). И в разработке, и в сборке используются реальные API и авторизация из `dev`. Тестовые сервисы и обход входа удалены. Backend, Kubernetes, Docker/compose, CI/CD и API-клиенты совпадают с `dev`; итоговый diff ветки ограничен `frontend/`.
 
-MTS Text / MTS Extended загружаются через существующие `/brand-fonts/*.woff2`. Serve-плагин читает локальные игнорируемые файлы; шрифты и бренд-гайды не копируются в Git или dist.
+MTS Text / MTS Extended загружаются через `/brand-fonts/*.woff2` с учётом base-пути. Пять используемых WOFF2-файлов хранятся в `public/brand-fonts/`, включены в Git и поставляются в сборке frontend. Исходная папка `mts_shrift/` и бренд-гайды остаются вне Git.
 
 ## Проверки
 
