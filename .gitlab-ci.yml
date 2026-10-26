@@ -12,7 +12,7 @@ variables:
   INTERNAL_GATEWAY: "http://traefik.kube-system"     # server-side вызовы копилотов без hairpin (через Host-заголовок)
   COPILOT_HOST: "2.59.80.61"                            # legacy path-схема (fallback, если base_domain пуст)
 
-  PROMOTE_TO_PROD: "true"
+  PROMOTE_TO_PROD: "false"
 
 stages:
   - build
