@@ -30,6 +30,6 @@ onBeforeUnmount(stopCatalogPolling)
   </main>
   <footer class="app-footer page-container">
     <span>XOps Platform</span>
-    <span>Каталог Copilot · XOps Platform</span>
+    <span>Единое пространство AI Copilot</span>
   </footer>
 </template>

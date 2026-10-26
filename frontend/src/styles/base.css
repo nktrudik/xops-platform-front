@@ -3,6 +3,8 @@
 }
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
+  scrollbar-gutter: stable;
 }
 body {
   margin: 0;
@@ -19,6 +21,7 @@ textarea {
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 button {
   cursor: pointer;
@@ -36,6 +39,7 @@ h2,
 h3 {
   font-family: var(--font-heading);
   font-weight: 500;
+  text-wrap: balance;
 }
 button,
 a,
@@ -47,15 +51,15 @@ textarea {
   outline: 2px solid var(--red);
 }
 .page-container {
-  width: min(100% - 80px, 1600px);
+  width: min(100% - 96px, 1440px);
   margin-inline: auto;
 }
 #main {
-  min-height: calc(100vh - 210px);
+  min-height: calc(100svh - 165px);
 }
 .surface {
   background: var(--white);
-  border-radius: 26px;
+  border-radius: var(--radius-lg);
 }
 .button {
   display: inline-flex;
@@ -67,7 +71,12 @@ textarea {
   border: 1px solid transparent;
   border-radius: 14px;
   font-weight: 500;
-  transition: background 0.15s;
+  transition:
+    background var(--motion-fast),
+    transform var(--motion-fast) var(--ease-out);
+}
+.button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 .button-primary {
   color: white;
@@ -131,7 +140,7 @@ textarea {
   gap: 6px;
   padding: 6px 10px;
   border-radius: 30px;
-  background: var(--background);
+  background: var(--surface-soft);
   white-space: nowrap;
   color: var(--text-secondary);
   font-size: 12px;
@@ -143,7 +152,7 @@ textarea {
   background: var(--muted);
 }
 .status-available .status-dot {
-  background: #aac613;
+  background: var(--success);
 }
 .status-maintenance .status-dot {
   background: #f08c00;
@@ -155,146 +164,16 @@ textarea {
 .status-configuration-error .status-dot {
   background: var(--red);
 }
-.app-header {
-  background: white;
-  border-bottom: 1px solid var(--border);
-}
-.header-inner {
-  display: flex;
-  align-items: center;
-  gap: 36px;
-  height: 92px;
-}
-.brand {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-.brand-mark {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 52px;
-  height: 52px;
-  padding: 5px 6px;
-  background: var(--red);
-  color: white;
-  font-size: 21px;
-  line-height: 1;
-  font-weight: 700;
-  font-family: Arial, sans-serif;
-}
-.brand-mark span:last-child {
-  grid-column: 2;
-  align-self: end;
-}
-.brand-wordmark {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 19px;
-  line-height: 1.1;
-}
-.brand-wordmark > span {
-  display: block;
-  font-size: 14px;
-  letter-spacing: 0.3px;
-  margin-top: 4px;
-}
-.header-inner nav {
-  margin-left: auto;
-}
-.header-link {
-  font-size: 14px;
-  font-weight: 500;
-  padding: 12px 0;
-}
-.header-link:hover {
-  color: var(--red);
-}
 .app-footer {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding-block: 32px;
+  padding-block: 24px;
   color: var(--text-secondary);
   font-size: 12px;
-  margin-top: 24px;
-}
-.copilot-card {
-  padding: 28px;
-  min-height: 290px;
-  display: flex;
-  flex-direction: column;
-  transition:
-    box-shadow 0.2s,
-    transform 0.2s;
-}
-.copilot-card:has(.card-open):hover {
-  box-shadow: 0 8px 26px rgb(0 0 0 / 5%);
-  transform: translateY(-3px);
-}
-.card-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.copilot-card h3 {
-  font-size: 23px;
-  line-height: 1.35;
-  margin: 22px 0 10px;
-  overflow-wrap: anywhere;
-}
-.copilot-card p {
-  color: var(--text-secondary);
-  font-size: 15px;
-  line-height: 1.65;
-  margin: 0 0 26px;
-}
-.card-bottom {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-top: auto;
-  padding-top: 18px;
-  border-top: 1px solid var(--background);
-}
-.interface-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.interface-label svg {
-  width: 15px;
-  height: 15px;
-}
-.card-open {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--red);
-  font-size: 14px;
-  font-weight: 500;
-  padding-block: 4px;
-}
-.card-open:hover {
-  text-decoration: underline;
-}
-.card-open svg {
-  width: 20px;
-  height: 20px;
-}
-.unavailable-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.card-unavailable .icon-tile {
-  color: var(--muted);
-  background: var(--background);
+  margin-top: 28px;
+  border-top: 1px solid var(--border);
 }
 .state-panel {
   display: flex;
@@ -403,31 +282,6 @@ textarea {
   .page-container {
     width: calc(100% - 32px);
   }
-  .header-inner {
-    height: 76px;
-    gap: 16px;
-  }
-  .brand {
-    gap: 10px;
-  }
-  .brand-mark {
-    width: 42px;
-    height: 42px;
-    font-size: 17px;
-  }
-  .brand-wordmark {
-    font-size: 15px;
-  }
-  .brand-wordmark > span {
-    font-size: 10px;
-  }
-  .header-link {
-    font-size: 12px;
-  }
-  .copilot-card {
-    padding: 24px;
-    min-height: 280px;
-  }
   .app-footer {
     line-height: 1.6;
   }
@@ -444,6 +298,9 @@ textarea {
   *::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
   }
 }

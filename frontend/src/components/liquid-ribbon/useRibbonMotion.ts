@@ -14,7 +14,7 @@ export function useRibbonMotion(
   const visible = shallowRef(true)
   const intersecting = shallowRef(false)
   const running = computed(
-    () => !paused.value && !reduced.value && visible.value && intersecting.value,
+    () => ready.value && !paused.value && !reduced.value && visible.value && intersecting.value,
   )
   let renderer: RibbonRenderer | null = null
   let animation = 0

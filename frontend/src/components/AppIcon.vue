@@ -16,6 +16,9 @@ export type IconName =
   | 'refresh'
   | 'alert'
   | 'trash'
+  | 'grid'
+  | 'logout'
+  | 'external'
 defineProps<{ name: IconName }>()
 
 const paths: Record<IconName, string> = {
@@ -35,6 +38,9 @@ const paths: Record<IconName, string> = {
   refresh: 'M20 7V2m0 5h-5M4 17v5m0-5h5M4 8a9 9 0 0 1 16-1M20 16a9 9 0 0 1-16 1',
   alert: 'm12 3 10 18H2L12 3Zm0 5v6m0 3v.1',
   trash: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7',
+  grid: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
+  logout: 'M9 4H4v16h5m5-12 4 4-4 4m-5-4h12',
+  external: 'M14 3h7v7m0-7L10 14M10 3H3v18h18v-7',
 }
 </script>
 

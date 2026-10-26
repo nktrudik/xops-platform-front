@@ -11,3 +11,4 @@ mts_shrift
 **/*.ttf
 **/*.otf
 **/*.eot
+!src/assets/fonts/*.woff2

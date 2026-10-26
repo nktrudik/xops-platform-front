@@ -80,7 +80,7 @@ const { ready, paused, reduced, running } = useRibbonMotion(
     </div>
     <div class="ribbon-scrim" aria-hidden="true" />
     <button
-      v-if="!reduced"
+      v-if="!reduced && ready"
       class="motion-toggle"
       type="button"
       :aria-label="paused ? 'Включить анимацию' : 'Приостановить анимацию'"
@@ -110,39 +110,39 @@ const { ready, paused, reduced, running } = useRibbonMotion(
   will-change: transform;
 }
 .field-rose {
-  width: 420px;
-  height: 360px;
-  right: -100px;
-  top: -110px;
-  background: #f7b5c6;
-  opacity: 0.52;
-  transition: opacity 0.6s;
+  width: 350px;
+  height: 300px;
+  right: -50px;
+  top: -100px;
+  background: #f5becb;
+  opacity: 0.45;
+  transition: opacity var(--motion-enter);
 }
 .field-lilac {
-  width: 440px;
-  height: 280px;
-  right: 160px;
-  top: 60px;
-  background: #c8bcf5;
-  opacity: 0.42;
+  width: 320px;
+  height: 240px;
+  right: 120px;
+  top: 100px;
+  background: #d0c6e9;
+  opacity: 0.4;
   animation-delay: -7s;
   animation-duration: 23s;
 }
 .field-blue {
-  width: 420px;
-  height: 240px;
-  right: -90px;
-  bottom: -90px;
-  background: #b2d9f4;
+  width: 330px;
+  height: 200px;
+  right: -50px;
+  bottom: -100px;
+  background: #bfdced;
   opacity: 0.6;
   animation-delay: -13s;
 }
 .ribbon-stage {
   position: absolute;
-  right: 12px;
-  top: -4px;
-  width: 500px;
-  height: 330px;
+  right: 0;
+  top: 24px;
+  bottom: 24px;
+  width: 40%;
 }
 .ribbon-canvas,
 .ribbon-fallback {
@@ -153,40 +153,38 @@ const { ready, paused, reduced, running } = useRibbonMotion(
 }
 .ribbon-shadow {
   position: absolute;
-  left: 20%;
-  right: 13%;
+  left: 24%;
+  right: 19%;
   bottom: 20px;
-  height: 25px;
+  height: 20px;
   background: #9f306d;
-  opacity: 0.13;
+  opacity: 0.09;
   filter: blur(16px);
   transform: rotate(-8deg);
 }
 .ribbon-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #faf6fb 0%, #faf6fbf5 38%, #faf6fb00 72%);
+  background: linear-gradient(90deg, #fcfafb 0%, #fcfafbf5 48%, #fcfafb00 72%);
 }
 .motion-toggle {
   position: absolute;
-  right: 20px;
-  top: 20px;
-  width: 32px;
-  height: 32px;
+  right: 16px;
+  top: 16px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
-  border: 1px solid #ffffffb3;
+  border: 1px solid #ffffffc0;
   border-radius: 50%;
   color: #6c5160;
-  background: #ffffff8c;
+  background: #ffffffa8;
   pointer-events: auto;
   cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
   transition:
-    background 0.2s,
-    color 0.2s,
-    transform 0.2s;
+    background var(--motion-fast),
+    color var(--motion-fast),
+    transform var(--motion-fast);
 }
 .motion-toggle:hover {
   background: white;
@@ -196,7 +194,7 @@ const { ready, paused, reduced, running } = useRibbonMotion(
 .motion-toggle::before {
   content: '';
   position: absolute;
-  inset: -6px;
+  inset: -4px;
   border-radius: 50%;
 }
 .motion-toggle:active {
@@ -204,70 +202,74 @@ const { ready, paused, reduced, running } = useRibbonMotion(
 }
 .is-still .color-field {
   animation-play-state: paused;
+  will-change: auto;
 }
 .is-engaged .field-rose {
-  opacity: 0.72;
+  opacity: 0.7;
 }
 @keyframes field-drift {
   from {
     transform: translate3d(-16px, -8px, 0) scale(0.94);
   }
   to {
-    transform: translate3d(32px, 20px, 0) scale(1.12);
+    transform: translate3d(24px, 16px, 0) scale(1.08);
   }
 }
-@media (min-width: 1700px) {
+@media (max-width: 1100px) and (min-width: 761px) {
   .ribbon-stage {
-    right: 42px;
-    width: 580px;
-    height: 350px;
-    top: -6px;
+    width: 36%;
+    top: 44px;
+    bottom: 44px;
+    right: -4px;
   }
 }
-@media (max-width: 1100px) {
+@media (max-width: 760px) {
+  .liquid-ribbon {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: 132px;
+    margin-block: 4px;
+  }
   .ribbon-stage {
-    right: -70px;
-    width: 430px;
-    opacity: 0.7;
+    width: 240px;
+    height: 150px;
+    top: -10px;
+    right: calc(50% - 120px);
+    bottom: auto;
   }
   .ribbon-scrim {
-    background: linear-gradient(90deg, #faf6fb 0%, #faf6fbf5 48%, #faf6fb26 100%);
-  }
-}
-@media (max-width: 640px) {
-  .ribbon-stage {
-    width: 270px;
-    height: 230px;
-    top: -24px;
-    right: -100px;
-    opacity: 0.6;
-  }
-  .ribbon-scrim {
-    background: linear-gradient(110deg, #faf6fb 0%, #faf6fbf5 40%, #faf6fb5c 100%);
+    display: none;
   }
   .field-rose {
-    width: 240px;
-    height: 220px;
-    right: -140px;
-    top: -60px;
+    width: 180px;
+    height: 100px;
+    right: 15%;
+    top: 0;
+    opacity: 0.25;
   }
   .field-lilac {
-    width: 230px;
-    right: -80px;
-    top: 140px;
+    width: 180px;
+    height: 100px;
+    right: 25%;
+    top: 30px;
+    opacity: 0.25;
   }
   .field-blue {
-    width: 300px;
-    right: -80px;
+    width: 180px;
+    height: 100px;
+    right: 0;
+    bottom: -40px;
+    opacity: 0.3;
+  }
+  .ribbon-shadow {
+    bottom: 12px;
   }
   .motion-toggle {
-    right: 10px;
-    top: 10px;
-    width: 28px;
-    height: 28px;
-  }
-  .motion-toggle::before {
-    inset: -8px;
+    width: 36px;
+    height: 36px;
+    right: 4px;
+    top: 48px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

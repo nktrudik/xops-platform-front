@@ -50,7 +50,7 @@ async function catalogMount(items: readonly Copilot[] = testCopilots, failure = 
   wrappers.push(wrapper)
   await services.loadCatalog()
   await flushPromises()
-  return { wrapper, services }
+  return { wrapper, services, router }
 }
 
 describe('Каталог', () => {
@@ -76,6 +76,42 @@ describe('Каталог', () => {
     const { wrapper } = await catalogMount()
     expect(wrapper.find('a[href="/copilots/maintenance-test"]').exists()).toBe(false)
     expect(wrapper.find('a[href="/copilots/upcoming-test"]').exists()).toBe(false)
+  })
+
+  it('совмещает формат с поиском и восстанавливает фильтры из URL', async () => {
+    const { wrapper, router } = await catalogMount()
+    const chatFilter = wrapper
+      .findAll('.format-filter')
+      .find((button) => button.text().startsWith('Чат'))!
+    await chatFilter.trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('article')).toHaveLength(4)
+    expect(router.currentRoute.value.query.format).toBe('chat')
+    await wrapper.get('input').setValue('продажам')
+    await flushPromises()
+    expect(wrapper.findAll('article')).toHaveLength(1)
+    expect(wrapper.text()).toContain('Второй чат')
+    expect(router.currentRoute.value.query.q).toBe('продажам')
+    await router.push('/?format=external&q=файлов')
+    await flushPromises()
+    expect(wrapper.get('input').element.value).toBe('файлов')
+    expect(wrapper.findAll('article')).toHaveLength(1)
+    expect(wrapper.get('article').text()).toContain('Внешний сервис')
+    await wrapper.get('.filter-reset').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('article')).toHaveLength(6)
+    expect(router.currentRoute.value.query).toEqual({})
+  })
+
+  it('сохраняет выбранный формат, если его удалило обновление каталога', async () => {
+    const { wrapper, services, router } = await catalogMount()
+    await router.push('/?format=embedded')
+    await flushPromises()
+    services.copilots.value = testCopilots.filter((copilot) => copilot.interfaceType !== 'embedded')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Ничего не найдено')
+    expect(wrapper.get('.format-filter[aria-pressed="true"]').text()).toContain('Встроенный UI0')
+    expect(router.currentRoute.value.query.format).toBe('embedded')
   })
 })
 

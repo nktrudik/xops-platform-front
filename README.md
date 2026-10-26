@@ -54,7 +54,7 @@ docker compose down
 
 Для Compose: `KUBECONFIG_FILE` — путь к существующему kubeconfig, `XOPS_COPILOT_HOST` — существующий ingress-хост без схемы, `XOPS_PLATFORM_NAMESPACE` — неймспейс платформы. `XOPS_PORT` задаёт локальный порт. В кластере kubeconfig не требуется.
 
-Шрифты МТС и гайды исключены из Git и Docker-контекстов. Локальные шрифты при необходимости подключаются через `MTS_FONTS_DIR` read-only.
+Пять используемых начертаний MTS Text и MTS Extended находятся в `frontend/src/assets/fonts/` и включаются Vite в сборку с хешированными именами и настроенным base path. Они входят в Git и Docker-контекст; исходная коллекция `mts_shrift/` и гайды остаются исключёнными. Раздача выполняется существующим маршрутом `/assets/`, без зависимости от внешнего тома шрифтов.
 
 ## Архитектура
 

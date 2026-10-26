@@ -9,7 +9,7 @@ export const router = createRouter({
     { path: '/copilots/:id', name: 'copilot', component: () => import('../views/CopilotView.vue') },
     { path: '/:pathMatch(.*)*', component: () => import('../views/NotFoundView.vue') },
   ],
-  scrollBehavior: (_to, _from, saved) => saved ?? { top: 0 },
+  scrollBehavior: (to, from, saved) => saved ?? (to.path === from.path ? false : { top: 0 }),
 })
 
 router.beforeEach(async (to) => {

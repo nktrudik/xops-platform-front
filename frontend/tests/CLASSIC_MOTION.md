@@ -8,8 +8,8 @@ npx.cmd playwright test --config playwright.classic.config.ts
 
 The review server uses port 5175. Tests intercept API responses using the existing
 test fixtures; the application continues to use its normal API and authentication.
-The test server reads local, ignored fonts from `mts_shrift/ШРИФТ/Web` and serves the
-existing `/brand-fonts/` URLs. Font binaries are never copied into source or the build.
+The test server uses the five application fonts in `src/assets/fonts/`, just like
+the production build. It does not substitute files from the ignored source collection.
 
 Screenshots, layout measurements and performance samples are written under
 `.artifacts/liquid-ribbon/`. Projects cover 1440×900, 1920×1080 and touch 390×844.
@@ -32,5 +32,5 @@ OS cursor. Encode the captured frames using an existing FFmpeg installation:
 ffmpeg -y -f concat -safe 0 -i ../.artifacts/liquid-ribbon/video/frames.ffconcat -vf fps=30 -t 10.5 -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart ../.artifacts/liquid-ribbon/mts-liquid-ribbon.mp4
 ```
 
-No recording tools, test fixtures, local fonts or review-server configuration enter
+No recording tools, test fixtures or review-server configuration enter
 the production bundle.
