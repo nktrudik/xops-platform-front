@@ -208,10 +208,10 @@ function clearDeparture(element: Element): void {
   transform: translateY(-2px);
 }
 .format-filter[aria-pressed='true'] {
-  background: var(--surface-selected);
-  color: var(--on-selected);
-  border-color: var(--surface-selected);
-  box-shadow: var(--shadow-control);
+  background: #fceff0;
+  color: var(--text);
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
 }
 .format-filter:active {
   transform: scale(0.97);
@@ -233,10 +233,6 @@ function clearDeparture(element: Element): void {
   transition:
     color var(--motion-fast),
     background var(--motion-fast);
-}
-.format-filter[aria-pressed='true'] .filter-count {
-  background: var(--primary);
-  color: white;
 }
 .filter-reset {
   min-height: 40px;

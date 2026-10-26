@@ -164,10 +164,10 @@ const formatIcon = computed(() => {
   gap: 16px;
   margin: 0 -24px -24px;
   padding: 16px 24px;
-  border-top: 1px solid var(--graphite);
+  border-top: 1px solid var(--border);
   border-radius: 0 0 15px 15px;
-  background: var(--graphite);
-  color: var(--on-selected);
+  background: #ededf1;
+  color: var(--text);
 }
 .card-format {
   display: grid;
@@ -185,11 +185,11 @@ const formatIcon = computed(() => {
   width: 15px;
   height: 15px;
   flex-shrink: 0;
-  color: #d2d2db;
+  color: var(--text-secondary);
 }
 .format-hint {
   padding-left: 22px;
-  color: #c2c2cd;
+  color: var(--text-secondary);
   font-size: 11px;
 }
 .card-open {
@@ -199,7 +199,7 @@ const formatIcon = computed(() => {
   min-height: 40px;
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--white);
+  border: 1px solid var(--border-control);
   background: var(--white);
   color: var(--graphite);
   font-size: 12px;

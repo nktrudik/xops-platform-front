@@ -9,7 +9,7 @@ html {
 body {
   margin: 0;
   color: var(--text);
-  background: var(--background);
+  background: #f6f6f8;
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
