@@ -136,7 +136,7 @@ function clearDeparture(element: Element): void {
 
 <style scoped>
 .catalog-section {
-  margin-top: 28px;
+  margin-top: 24px;
   scroll-margin-top: 28px;
 }
 .section-heading {
@@ -159,8 +159,11 @@ function clearDeparture(element: Element): void {
   scroll-margin-top: 28px;
 }
 .catalog-count {
-  padding-bottom: 3px;
-  color: var(--text-secondary);
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface-platinum);
+  color: var(--text);
   font-size: 13px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -176,44 +179,64 @@ function clearDeparture(element: Element): void {
 .format-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 .format-filter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 9px 13px;
-  border: 1px solid transparent;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  background: transparent;
+  color: var(--text);
+  background: var(--surface-platinum);
   font-size: 12px;
+  font-weight: 500;
   transition:
     color var(--motion-fast),
     background var(--motion-fast),
-    border-color var(--motion-fast);
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast),
+    transform var(--motion-ui) var(--ease-out);
 }
 .format-filter:hover {
-  background: var(--surface-soft);
-  color: var(--text);
+  background: var(--surface-hover);
+  border-color: var(--text);
+  transform: translateY(-2px);
 }
 .format-filter[aria-pressed='true'] {
-  background: var(--white);
-  color: var(--text);
-  border-color: var(--border-strong);
-  box-shadow: 0 2px 4px #20202704;
+  background: var(--surface-selected);
+  color: var(--on-selected);
+  border-color: var(--surface-selected);
+  box-shadow: var(--shadow-control);
+}
+.format-filter:active {
+  transform: scale(0.97);
+}
+.format-filter:focus-visible {
+  outline: 3px solid var(--focus);
 }
 .filter-count {
-  min-width: 17px;
-  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  min-width: 23px;
+  height: 23px;
+  padding-inline: 5px;
+  border-radius: 6px;
+  background: #d5d5dc;
+  color: var(--text);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+  transition:
+    color var(--motion-fast),
+    background var(--motion-fast);
 }
 .format-filter[aria-pressed='true'] .filter-count {
-  color: var(--red);
+  background: var(--primary);
+  color: white;
 }
 .filter-reset {
   min-height: 40px;

@@ -29,7 +29,7 @@ onBeforeUnmount(stopCatalogPolling)
     <RouterView />
   </main>
   <footer class="app-footer page-container">
-    <span>XOps Platform</span>
+    <span>MWS · XOps Platform</span>
     <span>Единое пространство AI Copilot</span>
   </footer>
 </template>

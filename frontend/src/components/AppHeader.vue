@@ -3,6 +3,7 @@ import { computed, shallowRef } from 'vue'
 import { RouterLink } from 'vue-router'
 import { logout, session } from '../services/api'
 import AppIcon from './AppIcon.vue'
+import mwsLogo from '../assets/brand/mws-logo.svg'
 
 const error = shallowRef('')
 const signingOut = shallowRef(false)
@@ -24,10 +25,14 @@ async function signOut(): Promise<void> {
 <template>
   <header class="app-header">
     <div class="header-inner page-container">
-      <RouterLink class="brand" to="/" aria-label="МТС XOps Platform — главная">
-        <span class="brand-mark" aria-hidden="true"
-          ><span>М</span><span>Т</span><span>С</span></span
-        >
+      <RouterLink class="brand" to="/" aria-label="MWS XOps Platform — главная">
+        <img
+          class="brand-logo"
+          :src="mwsLogo"
+          alt="MWS — МТС Web Services"
+          width="44"
+          height="44"
+        />
         {{ ' ' }}
         <span class="brand-wordmark" translate="no">XOPS&nbsp;<span>PLATFORM</span></span>
       </RouterLink>
@@ -57,8 +62,10 @@ async function signOut(): Promise<void> {
 
 <style scoped>
 .app-header {
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
+  position: relative;
+  background: var(--surface-platinum);
+  border-bottom: 1px solid var(--border-strong);
+  box-shadow: 0 3px 12px #20202708;
 }
 .header-inner {
   display: flex;
@@ -73,67 +80,79 @@ async function signOut(): Promise<void> {
   gap: 12px;
   border-radius: 4px;
 }
-.brand-mark {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 40px;
-  height: 40px;
-  padding: 4px 5px;
-  color: white;
-  background: var(--red);
-  font:
-    700 17px/1 Arial,
-    sans-serif;
-}
-.brand-mark span:last-child {
-  grid-column: 2;
-  align-self: end;
+.brand-logo {
+  display: block;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
 }
 .brand-wordmark {
-  font: 700 17px/1.1 var(--font-heading);
-  letter-spacing: -0.3px;
+  font: 700 18px/1.1 var(--font-heading);
+  letter-spacing: -0.4px;
 }
 .brand-wordmark > span {
   display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  letter-spacing: 0.2px;
+  margin-top: 5px;
+  font-size: 10px;
+  letter-spacing: 1.15px;
 }
 .header-caption {
   padding-left: 24px;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--border-strong);
   color: var(--text-secondary);
   font-size: 12px;
 }
 .header-nav {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   min-width: 0;
   margin-left: auto;
 }
 .header-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  min-height: 40px;
-  padding: 10px 14px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  color: var(--text);
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
   transition:
     background var(--motion-fast),
-    color var(--motion-fast);
-}
-.header-link.is-current {
-  background: var(--red-soft);
-  color: var(--red-hover);
+    border-color var(--motion-fast),
+    color var(--motion-fast),
+    transform var(--motion-fast);
 }
 .header-link:hover {
-  color: var(--red);
-  background: var(--surface-soft);
+  background: var(--surface-hover);
+  border-color: var(--graphite);
+}
+.header-link.is-current {
+  background: var(--surface-selected);
+  border-color: var(--surface-selected);
+  color: var(--on-selected);
+  box-shadow: var(--shadow-control);
+}
+.header-link.is-current::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 16px;
+  right: 16px;
+  height: 3px;
+  background: var(--primary);
+}
+.header-link.is-current:hover {
+  background: #393942;
+}
+.header-link:active,
+.sign-out:active {
+  transform: scale(0.97);
 }
 .header-link svg,
 .sign-out svg {
@@ -145,6 +164,8 @@ async function signOut(): Promise<void> {
   align-items: center;
   gap: 9px;
   min-width: 0;
+  padding-left: 20px;
+  border-left: 1px solid var(--border-strong);
 }
 .account-avatar {
   display: grid;
@@ -152,18 +173,19 @@ async function signOut(): Promise<void> {
   width: 32px;
   height: 32px;
   flex-shrink: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 50%;
-  background: var(--surface-soft);
+  background: var(--surface-elevated);
+  color: var(--text);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
 }
 .account-name {
   max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text-secondary);
   font-size: 13px;
+  font-weight: 500;
 }
 .sign-out {
   display: inline-flex;
@@ -171,24 +193,26 @@ async function signOut(): Promise<void> {
   justify-content: center;
   gap: 8px;
   min-height: 44px;
-  padding: 8px;
-  border: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-secondary);
   font-size: 13px;
   transition:
     color var(--motion-fast),
-    background var(--motion-fast);
+    background var(--motion-fast),
+    transform var(--motion-fast);
 }
-.sign-out:hover {
+.sign-out:hover:not(:disabled) {
   color: var(--red-hover);
+  border-color: var(--red-hover);
   background: var(--red-soft);
 }
 .header-error {
   margin-block: 0;
   padding-bottom: 12px;
-  color: var(--red);
+  color: var(--red-hover);
   font-size: 13px;
 }
 @media (max-width: 1100px) {
@@ -207,29 +231,31 @@ async function signOut(): Promise<void> {
     gap: 8px;
     min-height: 44px;
   }
-  .brand-mark {
+  .brand-logo {
     width: 36px;
     height: 36px;
-    font-size: 15px;
   }
   .brand-wordmark {
     font-size: 14px;
   }
   .brand-wordmark > span {
-    font-size: 9px;
+    font-size: 8px;
+    letter-spacing: 0.9px;
   }
   .header-nav {
     gap: 8px;
   }
   .header-link {
-    min-height: 44px;
     padding: 8px;
     font-size: 12px;
-    gap: 6px;
   }
   .header-link svg,
   .sign-out > span {
     display: none;
+  }
+  .account {
+    padding: 0;
+    border: 0;
   }
   .account-avatar {
     width: 28px;
@@ -244,6 +270,7 @@ async function signOut(): Promise<void> {
   }
   .sign-out {
     min-width: 44px;
+    padding: 8px;
   }
 }
 </style>

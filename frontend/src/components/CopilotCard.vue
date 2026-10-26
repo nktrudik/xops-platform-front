@@ -28,8 +28,14 @@ const formatIcon = computed(() => {
     :class="{ 'card-unavailable': copilot.status !== 'available' }"
   >
     <svg class="card-flourish" viewBox="0 0 180 100" fill="none" aria-hidden="true">
-      <path d="M-12 87C30 77 45 10 89 17C133 24 100 88 144 78C167 73 175 41 194 28" />
-      <path d="M-10 97C36 83 51 23 90 27C127 31 108 98 151 87C171 82 184 53 197 44" />
+      <path
+        pathLength="1"
+        d="M-12 87C30 77 45 10 89 17C133 24 100 88 144 78C167 73 175 41 194 28"
+      />
+      <path
+        pathLength="1"
+        d="M-10 97C36 83 51 23 90 27C127 31 108 98 151 87C171 82 184 53 197 44"
+      />
     </svg>
     <div class="card-heading">
       <span class="card-icon"><AppIcon :name="copilot.icon" /></span>
@@ -71,24 +77,26 @@ const formatIcon = computed(() => {
   min-width: 0;
   min-height: 252px;
   padding: 24px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--surface-elevated) 50%, #f2f2f5);
   box-shadow: var(--shadow-rest);
   transition:
     transform var(--motion-ui) var(--ease-out),
     border-color var(--motion-ui),
-    box-shadow var(--motion-ui);
+    box-shadow var(--motion-ui),
+    background var(--motion-ui);
 }
 .card-flourish {
   position: absolute;
   z-index: -1;
-  top: 32px;
+  top: 12px;
   right: 20px;
-  width: 150px;
-  height: 88px;
+  width: 140px;
+  height: 64px;
   stroke: var(--red);
-  stroke-width: 0.8;
-  opacity: 0.1;
+  stroke-width: 1.2;
+  opacity: 0.28;
   transition:
     transform var(--motion-enter) var(--ease-out),
     opacity var(--motion-ui);
@@ -100,15 +108,29 @@ const formatIcon = computed(() => {
   gap: 12px;
 }
 .card-icon {
+  position: relative;
   display: grid;
   place-items: center;
   width: 46px;
   height: 46px;
   flex-shrink: 0;
-  border: 1px solid #e3061112;
+  border: 1px solid var(--graphite);
   border-radius: 13px;
-  background: var(--red-soft);
-  color: var(--red);
+  background: var(--graphite);
+  color: var(--white);
+  box-shadow: 0 4px 8px #20202712;
+  transition:
+    background var(--motion-ui),
+    border-color var(--motion-ui);
+}
+.card-icon::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 11px;
+  right: 11px;
+  height: 3px;
+  background: var(--red);
 }
 .card-icon svg {
   width: 24px;
@@ -140,8 +162,12 @@ const formatIcon = computed(() => {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border);
+  margin: 0 -24px -24px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--graphite);
+  border-radius: 0 0 15px 15px;
+  background: var(--graphite);
+  color: var(--on-selected);
 }
 .card-format {
   display: grid;
@@ -159,11 +185,11 @@ const formatIcon = computed(() => {
   width: 15px;
   height: 15px;
   flex-shrink: 0;
-  color: var(--text-secondary);
+  color: #d2d2db;
 }
 .format-hint {
   padding-left: 22px;
-  color: var(--text-secondary);
+  color: #c2c2cd;
   font-size: 11px;
 }
 .card-open {
@@ -173,11 +199,15 @@ const formatIcon = computed(() => {
   min-height: 40px;
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-  background: var(--text);
-  color: white;
+  border: 1px solid var(--white);
+  background: var(--white);
+  color: var(--graphite);
   font-size: 12px;
   font-weight: 500;
-  transition: background var(--motion-ui);
+  transition:
+    background var(--motion-ui),
+    border-color var(--motion-ui),
+    box-shadow var(--motion-ui);
 }
 .card-open::after {
   content: '';
@@ -191,14 +221,16 @@ const formatIcon = computed(() => {
   transition: transform var(--motion-ui) var(--ease-out);
 }
 .copilot-card:has(.card-open:focus-visible) {
-  outline: 2px solid var(--red);
+  outline: 3px solid var(--focus);
   outline-offset: 4px;
   border-color: var(--red);
   box-shadow: var(--shadow-hover);
 }
 .card-open:focus-visible {
   outline: none;
+  border-color: var(--red);
   background: var(--red);
+  color: white;
 }
 .unavailable-label {
   color: var(--text-secondary);
@@ -213,24 +245,60 @@ const formatIcon = computed(() => {
   color: var(--text-secondary);
   background: var(--surface-soft);
 }
+.card-unavailable .card-bottom {
+  background: var(--surface-platinum);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.card-unavailable .format-hint,
+.card-unavailable .interface-label svg {
+  color: var(--text-secondary);
+}
+.card-unavailable .card-icon::after {
+  display: none;
+}
 .card-unavailable .card-flourish {
   display: none;
 }
 @media (hover: hover) {
   .copilot-card:has(.card-open):hover {
     transform: translateY(-4px);
-    border-color: #e3061140;
+    border-color: var(--red);
+    background: var(--surface-elevated);
     box-shadow: var(--shadow-hover);
   }
   .copilot-card:has(.card-open):hover .card-flourish {
-    opacity: 0.22;
+    opacity: 0.65;
     transform: translate(-6px, -3px);
+  }
+  .copilot-card:has(.card-open):hover .card-icon {
+    border-color: var(--red);
+    background: var(--red);
+  }
+  .copilot-card:has(.card-open):hover .card-flourish path {
+    animation: trace-line 650ms var(--ease-out) both;
+  }
+  .copilot-card:has(.card-open):hover .card-flourish path + path {
+    animation-delay: 70ms;
   }
   .copilot-card:has(.card-open):hover .card-open {
     background: var(--red);
+    border-color: var(--red);
+    color: white;
+    box-shadow: 0 3px 12px #e306113d;
   }
   .copilot-card:has(.card-open):hover .card-open svg {
     transform: translateX(3px);
+  }
+}
+@keyframes trace-line {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
   }
 }
 .copilot-card:has(.card-open:active) {
@@ -240,6 +308,10 @@ const formatIcon = computed(() => {
   .copilot-card {
     min-height: 256px;
     padding: 20px;
+  }
+  .card-bottom {
+    margin: 0 -20px -20px;
+    padding: 16px 20px;
   }
   .card-title {
     font-size: 20px;

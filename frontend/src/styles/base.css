@@ -48,7 +48,7 @@ textarea {
   outline-offset: 4px;
 }
 :focus-visible {
-  outline: 2px solid var(--red);
+  outline: 3px solid var(--focus);
 }
 .page-container {
   width: min(100% - 96px, 1440px);
@@ -106,7 +106,7 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: var(--red);
+  color: var(--red-hover);
   background: none;
   border: 0;
   padding: 6px 0;
@@ -139,7 +139,9 @@ textarea {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
+  border: 1px solid var(--border-strong);
   border-radius: 30px;
+  font-weight: 500;
   background: var(--surface-soft);
   white-space: nowrap;
   color: var(--text-secondary);
@@ -151,14 +153,35 @@ textarea {
   border-radius: 50%;
   background: var(--muted);
 }
+.status-available {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: #a4c7b3;
+}
+.status-maintenance {
+  background: #fff1d8;
+  color: #79500b;
+  border-color: #d9bb81;
+}
+.status-coming-soon {
+  background: #e8edf9;
+  color: #365285;
+  border-color: #abbcda;
+}
+.status-unavailable,
+.status-configuration-error {
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+  border-color: #d69ba1;
+}
 .status-available .status-dot {
   background: var(--success);
 }
 .status-maintenance .status-dot {
-  background: #f08c00;
+  background: #79500b;
 }
 .status-coming-soon .status-dot {
-  background: #0082c8;
+  background: #365285;
 }
 .status-unavailable .status-dot,
 .status-configuration-error .status-dot {

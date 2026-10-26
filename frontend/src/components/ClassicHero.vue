@@ -96,9 +96,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', focusSearch))
   min-height: 372px;
   margin-top: 28px;
   padding: 30px 44px;
-  border: 1px solid #eee8ec;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  background: #fcfafb;
+  background: var(--surface-elevated);
+  box-shadow:
+    inset 0 1px 0 white,
+    var(--shadow-rest);
 }
 .hero-content {
   position: relative;
@@ -113,12 +116,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', focusSearch))
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--text-secondary);
+  color: var(--text);
   font-size: 12px;
+  font-weight: 500;
 }
 .eyebrow-line {
   width: 20px;
-  height: 3px;
+  height: 4px;
   border-radius: 2px;
   background: var(--red);
 }
@@ -144,20 +148,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', focusSearch))
   gap: 6px;
   margin-top: 24px;
   padding: 5px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-control);
   border-radius: 14px;
   background: var(--white);
-  box-shadow: 0 4px 16px #29233504;
+  box-shadow:
+    0 3px 0 #20202708,
+    0 8px 20px #20202708;
   transition:
     border-color var(--motion-ui),
     box-shadow var(--motion-ui);
   animation-delay: 180ms;
 }
+.search-form:hover {
+  border-color: var(--graphite);
+  box-shadow:
+    0 3px 0 #20202712,
+    0 10px 24px #2020270d;
+}
 .search-form:focus-within {
   border-color: var(--red);
   box-shadow:
-    0 0 0 4px #e306110b,
-    0 8px 24px #29233506;
+    0 0 0 3px #e3061126,
+    0 8px 24px #29233512;
 }
 .search-input-wrap {
   display: flex;
@@ -171,7 +183,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', focusSearch))
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  color: var(--muted);
+  color: var(--text);
   transition: color var(--motion-ui);
 }
 .search-form:focus-within .search-input-wrap > svg {
@@ -223,6 +235,10 @@ input::-webkit-search-cancel-button {
   min-height: 44px;
   padding: 8px;
   border-radius: 6px;
+}
+.search-clear:hover {
+  background: var(--surface-hover);
+  color: var(--text);
 }
 .search-clear svg {
   width: 16px;

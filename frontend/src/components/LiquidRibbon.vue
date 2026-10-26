@@ -114,8 +114,8 @@ const { ready, paused, reduced, running } = useRibbonMotion(
   height: 300px;
   right: -50px;
   top: -100px;
-  background: #f5becb;
-  opacity: 0.45;
+  background: #ef9caf;
+  opacity: 0.65;
   transition: opacity var(--motion-enter);
 }
 .field-lilac {
@@ -123,8 +123,8 @@ const { ready, paused, reduced, running } = useRibbonMotion(
   height: 240px;
   right: 120px;
   top: 100px;
-  background: #d0c6e9;
-  opacity: 0.4;
+  background: #b8b5d6;
+  opacity: 0.45;
   animation-delay: -7s;
   animation-duration: 23s;
 }
@@ -133,8 +133,8 @@ const { ready, paused, reduced, running } = useRibbonMotion(
   height: 200px;
   right: -50px;
   bottom: -100px;
-  background: #bfdced;
-  opacity: 0.6;
+  background: #94c6e0;
+  opacity: 0.7;
   animation-delay: -13s;
 }
 .ribbon-stage {
@@ -165,7 +165,7 @@ const { ready, paused, reduced, running } = useRibbonMotion(
 .ribbon-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #fcfafb 0%, #fcfafbf5 48%, #fcfafb00 72%);
+  background: linear-gradient(90deg, #fff 0%, #fffffff5 46%, #ffffff00 73%);
 }
 .motion-toggle {
   position: absolute;
@@ -175,10 +175,10 @@ const { ready, paused, reduced, running } = useRibbonMotion(
   height: 36px;
   display: grid;
   place-items: center;
-  border: 1px solid #ffffffc0;
+  border: 1px solid var(--border-control);
   border-radius: 50%;
-  color: #6c5160;
-  background: #ffffffa8;
+  color: var(--text);
+  background: #fffffff0;
   pointer-events: auto;
   cursor: pointer;
   transition:
@@ -187,8 +187,9 @@ const { ready, paused, reduced, running } = useRibbonMotion(
     transform var(--motion-fast);
 }
 .motion-toggle:hover {
-  background: white;
-  color: var(--red);
+  background: var(--graphite);
+  border-color: var(--graphite);
+  color: white;
   transform: scale(1.06);
 }
 .motion-toggle::before {
