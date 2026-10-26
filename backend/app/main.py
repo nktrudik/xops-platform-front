@@ -51,7 +51,9 @@ def create_app(
             if config.database_url.get_secret_value():
                 await database.initialize(config.admin_password_hash.get_secret_value())
             async with httpx.AsyncClient(
-                timeout=config.integration_timeout, transport=transport
+                timeout=config.integration_timeout, 
+                transport=transport,
+                verify=not config.internal_gateway.startswith("https://"),
             ) as client:
                 application.state.integration_client = client
                 yield
